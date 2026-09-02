@@ -32,7 +32,7 @@ from starlette.middleware.errors import ServerErrorMiddleware
 from starlette.middleware.exceptions import ExceptionMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
-from starlette.routing import BaseRoute
+from starlette.routing import BaseRoute, Router
 from starlette.types import ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
 from typing_extensions import deprecated
 
@@ -1030,9 +1030,12 @@ class FastAPI(Starlette):
             else:
                 exception_handlers[key] = value
 
+        router_app: ASGIApp = self.router
+        if type(self.router).__call__ is Router.__call__:
+            router_app = self.router.middleware_stack
         if not self.user_middleware:
             return ExceptionHandlingMiddleware(
-                self.router,
+                router_app,
                 error_handler=error_handler,
                 exception_handlers=exception_handlers,
                 debug=debug,
@@ -1050,7 +1053,7 @@ class FastAPI(Starlette):
             ]
         )
 
-        app = self.router
+        app = router_app
         for cls, args, kwargs in reversed(middleware):
             app = cls(app, *args, **kwargs)
         return app

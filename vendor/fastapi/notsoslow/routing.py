@@ -1539,7 +1539,17 @@ class APIRoute(routing.Route):
                 effective_context.app = app
             await app(scope, receive, send)
             return
-        await super().handle(scope, receive, send)
+        methods = self.methods
+        if methods and scope["method"] not in methods:
+            headers = {"Allow": ", ".join(methods)}
+            if "app" in scope:
+                raise HTTPException(status_code=405, headers=headers)
+            response = PlainTextResponse(
+                "Method Not Allowed", status_code=405, headers=headers
+            )
+            await response(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
 
 
 @dataclass
