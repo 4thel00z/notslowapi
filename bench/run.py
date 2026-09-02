@@ -86,7 +86,17 @@ LADDER: list[Rung] = [
     Rung("l0_raw", f"{BASE}/", server_args=UVICORN_TUNED, tag="tuned"),
     Rung("l2_fastapi_dict", f"{BASE}/", server_args=UVICORN_TUNED, tag="tuned"),
     Rung("l0_raw", f"{BASE}/", server="granian"),
+    Rung("l1_starlette", f"{BASE}/", server="granian"),
     Rung("l2_fastapi_dict", f"{BASE}/", server="granian"),
+    Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello", server="granian"),
+    Rung(
+        "l4_fastapi_model",
+        f"{BASE}/items",
+        method="POST",
+        body='{"name": "widget", "price": 1.5, "tags": ["a", "b"]}',
+        server="granian",
+    ),
+    Rung("l5b_fastapi_50routes_included", f"{BASE}/r39", server="granian"),
     Rung(
         "l0_raw",
         f"{BASE}/",
