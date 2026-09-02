@@ -116,9 +116,48 @@ from starlette.types import AppType, ASGIApp, Lifespan, Receive, Scope, Send
 from starlette.websockets import WebSocket
 from typing_extensions import deprecated
 
-
 # Copy of starlette.routing.request_response modified to include the
 # dependencies' AsyncExitStack
+JSON_CONTENT_TYPE_HEADER = (b"content-type", b"application/json")
+
+
+def json_bytes_response(content: bytes, status_code: int, background: Any) -> Response:
+    """Build the Response that Response(content, status_code, media_type=json) would build."""
+    response = Response.__new__(Response)
+    response.status_code = status_code
+    response.media_type = "application/json"
+    response.background = background
+    response.body = content
+    if status_code < 200 or status_code in (204, 304):
+        response.raw_headers = [JSON_CONTENT_TYPE_HEADER]
+    else:
+        response.raw_headers = [
+            (b"content-length", b"%d" % len(content)),
+            JSON_CONTENT_TYPE_HEADER,
+        ]
+    if not is_body_allowed_for_status_code(status_code):
+        response.body = b""
+    return response
+
+
+def dependant_is_trivial(dependant: Dependant) -> bool:
+    """True when solving the dependant can only ever produce no values and no errors."""
+    return not (
+        dependant.dependencies
+        or dependant.path_params
+        or dependant.query_params
+        or dependant.header_params
+        or dependant.cookie_params
+        or dependant.body_params
+        or dependant.request_param_name
+        or dependant.http_connection_param_name
+        or dependant.websocket_param_name
+        or dependant.response_param_name
+        or dependant.background_tasks_param_name
+        or dependant.security_scopes_param_name
+    )
+
+
 def exit_stacks_required(uses_exit_stacks: bool, provider: Any | None) -> bool:
     if uses_exit_stacks:
         return True
@@ -529,15 +568,58 @@ def get_request_handler(
             status_code=status_code, solved_result=solved_result
         )
         if use_dump_json:
-            response = Response(
-                content=content, media_type="application/json", **response_args
+            response = json_bytes_response(
+                content,
+                response_args.get("status_code", 200),
+                response_args["background"],
             )
         else:
             response = actual_response_class(content, **response_args)
-        if not is_body_allowed_for_status_code(response.status_code):
-            response.body = b""
+            if not is_body_allowed_for_status_code(response.status_code):
+                response.body = b""
         merge_dependency_headers(response, solved_result.response)
         return response
+
+    call = dependant.call
+    trivial_solved = SolvedDependency(
+        values={}, errors=[], background_tasks=None, response=None, dependency_cache={}
+    )
+
+    async def trivial_app(request: Request) -> Response:
+        if is_coroutine:
+            raw_response = await call()
+        else:
+            raw_response = await run_in_threadpool(call)
+        if isinstance(raw_response, Response):
+            return raw_response
+        if is_coroutine:
+            content = serialize_response_sync(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
+        else:
+            content = await serialize_response(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                is_coroutine=is_coroutine,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
+        return build_response(content, trivial_solved)
 
     async def plain_app(request: Request) -> Response:
         solved_result = await solve_dependencies(
@@ -589,6 +671,8 @@ def get_request_handler(
         return build_response(content, solved_result)
 
     if not body_field and not is_sse_stream and not is_json_stream and not is_generator:
+        if dependant_is_trivial(dependant):
+            return trivial_app
         return plain_app
 
     async def app(request: Request) -> Response:
