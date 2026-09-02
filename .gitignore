@@ -7,3 +7,4 @@ bench/out/
 .ruff_cache/
 dist/
 log.txt
+.coverage
