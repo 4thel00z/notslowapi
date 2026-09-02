@@ -26,13 +26,24 @@ class Rung:
     loop: str = "uvloop"
     http: str = "httptools"
     gc_freeze: bool = False
+    server: str = "uvicorn"
+    server_args: tuple[str, ...] = ()
+    tag: str = ""
 
     @property
     def label(self) -> str:
-        suffix = "[gc_freeze]" if self.gc_freeze else ""
-        if self.loop == "uvloop" and self.http == "httptools":
-            return self.name + suffix
-        return f"{self.name}[{self.loop}+{self.http}]{suffix}"
+        tags = []
+        if self.server != "uvicorn":
+            tags.append(self.server)
+        if self.loop != "uvloop" or self.http != "httptools":
+            tags.append(f"{self.loop}+{self.http}")
+        if self.tag:
+            tags.append(self.tag)
+        if self.gc_freeze:
+            tags.append("gc_freeze")
+        if not tags:
+            return self.name
+        return f"{self.name}[{'+'.join(tags)}]"
 
 
 @dataclass
@@ -51,6 +62,8 @@ class Result:
         return 1_000_000 / self.rps_median
 
 
+UVICORN_TUNED = ("--no-proxy-headers", "--no-server-header", "--no-date-header")
+
 LADDER: list[Rung] = [
     Rung("l0_raw", f"{BASE}/"),
     Rung("l1_starlette", f"{BASE}/"),
@@ -67,6 +80,24 @@ LADDER: list[Rung] = [
     ),
     Rung("l2_fastapi_dict", f"{BASE}/", loop="asyncio", http="h11"),
     Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello", gc_freeze=True),
+    Rung("l0_raw", f"{BASE}/", server_args=UVICORN_TUNED, tag="tuned"),
+    Rung("l2_fastapi_dict", f"{BASE}/", server_args=UVICORN_TUNED, tag="tuned"),
+    Rung("l0_raw", f"{BASE}/", server="granian"),
+    Rung("l2_fastapi_dict", f"{BASE}/", server="granian"),
+    Rung(
+        "l0_raw",
+        f"{BASE}/",
+        server="granian",
+        server_args=("--task-impl", "rust"),
+        tag="rust-tasks",
+    ),
+    Rung(
+        "l2_fastapi_dict",
+        f"{BASE}/",
+        server="granian",
+        server_args=("--task-impl", "rust"),
+        tag="rust-tasks",
+    ),
     Rung(
         "l4_fastapi_model",
         f"{BASE}/items",
@@ -94,7 +125,33 @@ def start_server(rung: Rung, profile: str | None) -> subprocess.Popen[bytes]:
         env["BENCH_GC_FREEZE"] = "1"
     if profile:
         env["BENCH_PROFILE"] = profile
-    cmd = [
+    cmd = server_command(rung)
+    proc = subprocess.Popen(cmd, env=env)
+    wait_for_port()
+    return proc
+
+
+def server_command(rung: Rung) -> list[str]:
+    if rung.server == "granian":
+        return [
+            sys.executable,
+            "-m",
+            "granian",
+            "--interface",
+            "asgi",
+            "--host",
+            HOST,
+            "--port",
+            str(PORT),
+            "--workers",
+            "1",
+            "--loop",
+            rung.loop,
+            "--no-log",
+            *rung.server_args,
+            "bench.apps:app",
+        ]
+    return [
         sys.executable,
         "-m",
         "uvicorn",
@@ -110,10 +167,8 @@ def start_server(rung: Rung, profile: str | None) -> subprocess.Popen[bytes]:
         "--no-access-log",
         "--log-level",
         "warning",
+        *rung.server_args,
     ]
-    proc = subprocess.Popen(cmd, env=env)
-    wait_for_port()
-    return proc
 
 
 def stop_server(proc: subprocess.Popen[bytes]) -> None:
