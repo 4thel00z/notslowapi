@@ -320,6 +320,77 @@ def is_json_content_type(value: str) -> bool:
     return subtype == "json" or subtype.endswith("+json")
 
 
+def serialize_validated(
+    field: ModelField,
+    value: Any,
+    errors: list[Any],
+    *,
+    response_content: Any,
+    include: IncEx | None,
+    exclude: IncEx | None,
+    by_alias: bool,
+    exclude_unset: bool,
+    exclude_defaults: bool,
+    exclude_none: bool,
+    endpoint_ctx: EndpointContext | None,
+    dump_json: bool,
+    endpoint_ctx_factory: Callable[[], EndpointContext] | None,
+) -> Any:
+    if errors:
+        if endpoint_ctx is None and endpoint_ctx_factory is not None:
+            endpoint_ctx = endpoint_ctx_factory()
+        ctx = endpoint_ctx or EndpointContext()
+        raise ResponseValidationError(
+            errors=errors,
+            body=response_content,
+            endpoint_ctx=ctx,
+        )
+    serializer = field.serialize_json if dump_json else field.serialize
+    return serializer(
+        value,
+        include=include,
+        exclude=exclude,
+        by_alias=by_alias,
+        exclude_unset=exclude_unset,
+        exclude_defaults=exclude_defaults,
+        exclude_none=exclude_none,
+    )
+
+
+def serialize_response_sync(
+    *,
+    field: ModelField | None = None,
+    response_content: Any,
+    include: IncEx | None = None,
+    exclude: IncEx | None = None,
+    by_alias: bool = True,
+    exclude_unset: bool = False,
+    exclude_defaults: bool = False,
+    exclude_none: bool = False,
+    endpoint_ctx: EndpointContext | None = None,
+    dump_json: bool = False,
+    endpoint_ctx_factory: Callable[[], EndpointContext] | None = None,
+) -> Any:
+    if not field:
+        return jsonable_encoder(response_content)
+    value, errors = field.validate(response_content, {}, loc=("response",))
+    return serialize_validated(
+        field,
+        value,
+        errors,
+        response_content=response_content,
+        include=include,
+        exclude=exclude,
+        by_alias=by_alias,
+        exclude_unset=exclude_unset,
+        exclude_defaults=exclude_defaults,
+        exclude_none=exclude_none,
+        endpoint_ctx=endpoint_ctx,
+        dump_json=dump_json,
+        endpoint_ctx_factory=endpoint_ctx_factory,
+    )
+
+
 async def serialize_response(
     *,
     field: ModelField | None = None,
@@ -335,35 +406,29 @@ async def serialize_response(
     dump_json: bool = False,
     endpoint_ctx_factory: Callable[[], EndpointContext] | None = None,
 ) -> Any:
-    if field:
-        if is_coroutine:
-            value, errors = field.validate(response_content, {}, loc=("response",))
-        else:
-            value, errors = await run_in_threadpool(
-                field.validate, response_content, {}, loc=("response",)
-            )
-        if errors:
-            if endpoint_ctx is None and endpoint_ctx_factory is not None:
-                endpoint_ctx = endpoint_ctx_factory()
-            ctx = endpoint_ctx or EndpointContext()
-            raise ResponseValidationError(
-                errors=errors,
-                body=response_content,
-                endpoint_ctx=ctx,
-            )
-        serializer = field.serialize_json if dump_json else field.serialize
-        return serializer(
-            value,
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-        )
-
-    else:
+    if not field:
         return jsonable_encoder(response_content)
+    if is_coroutine:
+        value, errors = field.validate(response_content, {}, loc=("response",))
+    else:
+        value, errors = await run_in_threadpool(
+            field.validate, response_content, {}, loc=("response",)
+        )
+    return serialize_validated(
+        field,
+        value,
+        errors,
+        response_content=response_content,
+        include=include,
+        exclude=exclude,
+        by_alias=by_alias,
+        exclude_unset=exclude_unset,
+        exclude_defaults=exclude_defaults,
+        exclude_none=exclude_none,
+        endpoint_ctx=endpoint_ctx,
+        dump_json=dump_json,
+        endpoint_ctx_factory=endpoint_ctx_factory,
+    )
 
 
 async def run_endpoint_function(
@@ -494,19 +559,33 @@ def get_request_handler(
             if raw_response.background is None:
                 raw_response.background = solved_result.background_tasks
             return raw_response
-        content = await serialize_response(
-            field=response_field,
-            response_content=raw_response,
-            include=response_model_include,
-            exclude=response_model_exclude,
-            by_alias=response_model_by_alias,
-            exclude_unset=response_model_exclude_unset,
-            exclude_defaults=response_model_exclude_defaults,
-            exclude_none=response_model_exclude_none,
-            is_coroutine=is_coroutine,
-            dump_json=use_dump_json,
-            endpoint_ctx_factory=functools.partial(endpoint_context, request),
-        )
+        if is_coroutine:
+            content = serialize_response_sync(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
+        else:
+            content = await serialize_response(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                is_coroutine=is_coroutine,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
         return build_response(content, solved_result)
 
     if not body_field and not is_sse_stream and not is_json_stream and not is_generator:
@@ -961,7 +1040,10 @@ def _update_scope(scope: Scope, child_scope: Scope) -> None:
 
 
 def _get_scope_effective_route_context(scope: Scope) -> Any | None:
-    return scope.get(_FASTAPI_SCOPE_KEY, {}).get(_FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY)
+    fastapi_scope = scope.get(_FASTAPI_SCOPE_KEY)
+    if not fastapi_scope:
+        return None
+    return fastapi_scope.get(_FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY)
 
 
 def _get_scope_included_router(scope: Scope) -> Any | None:

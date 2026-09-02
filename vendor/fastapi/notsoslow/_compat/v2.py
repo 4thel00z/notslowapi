@@ -182,7 +182,9 @@ class ModelField:
     ) -> tuple[Any, list[dict[str, Any]]]:
         try:
             return (
-                self._type_adapter.validate_python(value, from_attributes=True),
+                self._type_adapter.validator.validate_python(
+                    value, from_attributes=True
+                ),
                 [],
             )
         except ValidationError as exc:
@@ -231,7 +233,7 @@ class ModelField:
         # This uses Pydantic's dump_json() which serializes directly to JSON
         # bytes in one pass (via Rust), avoiding the intermediate Python dict
         # step of dump_python(mode="json") + json.dumps().
-        return self._type_adapter.dump_json(
+        return self._type_adapter.serializer.to_json(
             value,
             include=include,
             exclude=exclude,
