@@ -4,6 +4,7 @@ import html
 import inspect
 import sys
 import traceback
+from collections.abc import Awaitable
 
 from starlette._utils import is_async_callable
 from starlette.concurrency import run_in_threadpool
@@ -153,12 +154,12 @@ class ServerErrorMiddleware:
 
         response_started = False
 
-        async def _send(message: Message) -> None:
+        def _send(message: Message) -> Awaitable[None]:
             nonlocal response_started, send
 
             if message["type"] == "http.response.start":
                 response_started = True
-            await send(message)
+            return send(message)
 
         try:
             await self.app(scope, receive, _send)

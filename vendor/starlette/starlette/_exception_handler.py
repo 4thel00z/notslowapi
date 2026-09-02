@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable
 from typing import Any
 
 from starlette._utils import is_async_callable
@@ -31,12 +32,12 @@ def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASG
     async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
         response_started = False
 
-        async def sender(message: Message) -> None:
+        def sender(message: Message) -> Awaitable[None]:
             nonlocal response_started
 
             if message["type"] == "http.response.start":
                 response_started = True
-            await send(message)
+            return send(message)
 
         try:
             await app(scope, receive, sender)

@@ -242,22 +242,26 @@ class Route(BaseRoute):
         self.path_regex, self.path_format, self.param_convertors = compile_path(path)
 
     def matches(self, scope: Scope) -> tuple[Match, Scope]:
-        path_params: dict[str, Any]
-        if scope["type"] == "http":
-            route_path = get_route_path(scope)
+        if scope["type"] != "http":
+            return Match.NONE, {}
+        route_path = get_route_path(scope)
+        if not self.param_convertors:
+            if route_path != self.path:
+                return Match.NONE, {}
+            matched_params: dict[str, Any] = {}
+        else:
             match = self.path_regex.match(route_path)
-            if match:
-                matched_params = match.groupdict()
-                for key, value in matched_params.items():
-                    matched_params[key] = self.param_convertors[key].convert(value)
-                path_params = dict(scope.get("path_params", {}))
-                path_params.update(matched_params)
-                child_scope = {"endpoint": self.endpoint, "path_params": path_params}
-                if self.methods and scope["method"] not in self.methods:
-                    return Match.PARTIAL, child_scope
-                else:
-                    return Match.FULL, child_scope
-        return Match.NONE, {}
+            if not match:
+                return Match.NONE, {}
+            matched_params = match.groupdict()
+            for key, value in matched_params.items():
+                matched_params[key] = self.param_convertors[key].convert(value)
+        path_params = dict(scope.get("path_params", {}))
+        path_params.update(matched_params)
+        child_scope = {"endpoint": self.endpoint, "path_params": path_params}
+        if self.methods and scope["method"] not in self.methods:
+            return Match.PARTIAL, child_scope
+        return Match.FULL, child_scope
 
     def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         seen_params = set(path_params.keys())
