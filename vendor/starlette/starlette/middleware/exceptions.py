@@ -6,7 +6,7 @@ from typing import Any
 from starlette._exception_handler import (
     ExceptionHandlers,
     StatusHandlers,
-    wrap_app_handling_exceptions,
+    run_handling_exceptions,
 )
 from starlette.exceptions import HTTPException, WebSocketException
 from starlette.requests import Request
@@ -54,13 +54,7 @@ class ExceptionMiddleware:
             self._status_handlers,
         )
 
-        conn: Request | WebSocket
-        if scope["type"] == "http":
-            conn = Request(scope, receive, send)
-        else:
-            conn = WebSocket(scope, receive, send)
-
-        await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+        await run_handling_exceptions(self.app, None, scope, receive, send)
 
     async def http_exception(self, request: Request, exc: Exception) -> Response:
         assert isinstance(exc, HTTPException)

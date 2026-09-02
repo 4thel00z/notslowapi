@@ -13,7 +13,7 @@ from enum import Enum
 from re import Pattern
 from typing import Any, SupportsIndex, TypeVar
 
-from starlette._exception_handler import wrap_app_handling_exceptions
+from starlette._exception_handler import run_handling_exceptions
 from starlette._utils import get_route_path, is_async_callable, parse_host_header
 from starlette.concurrency import run_in_threadpool
 from starlette.convertors import CONVERTOR_TYPES, Convertor
@@ -62,7 +62,7 @@ def request_response(
             response = await f(request)
             await response(scope, receive, send)
 
-        await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+        await run_handling_exceptions(app, request, scope, receive, send)
 
     return app
 
@@ -81,7 +81,7 @@ def websocket_session(
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             await func(session)
 
-        await wrap_app_handling_exceptions(app, session)(scope, receive, send)
+        await run_handling_exceptions(app, session, scope, receive, send)
 
     return app
 

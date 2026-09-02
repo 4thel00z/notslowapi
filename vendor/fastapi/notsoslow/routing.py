@@ -90,7 +90,7 @@ from notsoslow.utils import (
     is_body_allowed_for_status_code,
 )
 from starlette import routing
-from starlette._exception_handler import wrap_app_handling_exceptions
+from starlette._exception_handler import run_handling_exceptions
 from starlette._utils import get_route_path, is_async_callable
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from starlette.datastructures import URL, FormData, URLPath
@@ -168,7 +168,7 @@ def request_response(
                 )
 
         # Same as in Starlette
-        await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+        await run_handling_exceptions(app, request, scope, receive, send)
 
     return app
 
@@ -194,7 +194,7 @@ def websocket_session(
                     await func(session)
 
         # Same as in Starlette
-        await wrap_app_handling_exceptions(app, session)(scope, receive, send)
+        await run_handling_exceptions(app, session, scope, receive, send)
 
     return app
 
