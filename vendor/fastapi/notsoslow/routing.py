@@ -311,6 +311,15 @@ def _extract_endpoint_context(func: Any) -> EndpointContext:
     return ctx
 
 
+@functools.lru_cache(maxsize=256)
+def is_json_content_type(value: str) -> bool:
+    media_type = value.split(";", 1)[0].strip().lower()
+    maintype, separator, subtype = media_type.partition("/")
+    if not separator or maintype != "application":
+        return False
+    return subtype == "json" or subtype.endswith("+json")
+
+
 async def serialize_response(
     *,
     field: ModelField | None = None,
@@ -324,6 +333,7 @@ async def serialize_response(
     is_coroutine: bool = True,
     endpoint_ctx: EndpointContext | None = None,
     dump_json: bool = False,
+    endpoint_ctx_factory: Callable[[], EndpointContext] | None = None,
 ) -> Any:
     if field:
         if is_coroutine:
@@ -333,6 +343,8 @@ async def serialize_response(
                 field.validate, response_content, {}, loc=("response",)
             )
         if errors:
+            if endpoint_ctx is None and endpoint_ctx_factory is not None:
+                endpoint_ctx = endpoint_ctx_factory()
             ctx = endpoint_ctx or EndpointContext()
             raise ResponseValidationError(
                 errors=errors,
@@ -424,6 +436,81 @@ def get_request_handler(
         actual_strict_content_type: bool = strict_content_type.value
     else:
         actual_strict_content_type = strict_content_type
+    is_generator = _is_async_gen_callable(dependant.call) or _is_gen_callable(
+        dependant.call
+    )
+    # Use the fast path (dump_json) when no custom response class was set and a
+    # response field with a TypeAdapter exists. Serializes directly to JSON
+    # bytes via Pydantic's Rust core, skipping the intermediate Python dict +
+    # json.dumps() step.
+    use_dump_json = response_field is not None and isinstance(
+        response_class, DefaultPlaceholder
+    )
+
+    def endpoint_context(request: Request) -> EndpointContext:
+        endpoint_ctx = (
+            _extract_endpoint_context(dependant.call)
+            if dependant.call
+            else EndpointContext()
+        )
+        if dependant.path:
+            # For mounted sub-apps, include the mount path prefix
+            mount_path = request.scope.get("root_path", "").rstrip("/")
+            endpoint_ctx["path"] = f"{request.method} {mount_path}{dependant.path}"
+        return endpoint_ctx
+
+    def build_response(content: Any, solved_result: SolvedDependency) -> Response:
+        response_args = _build_response_args(
+            status_code=status_code, solved_result=solved_result
+        )
+        if use_dump_json:
+            response = Response(
+                content=content, media_type="application/json", **response_args
+            )
+        else:
+            response = actual_response_class(content, **response_args)
+        if not is_body_allowed_for_status_code(response.status_code):
+            response.body = b""
+        merge_dependency_headers(response, solved_result.response)
+        return response
+
+    async def plain_app(request: Request) -> Response:
+        solved_result = await solve_dependencies(
+            request=request,
+            dependant=dependant,
+            body=None,
+            dependency_overrides_provider=dependency_overrides_provider,
+            async_exit_stack=request.scope.get("fastapi_inner_astack"),
+            embed_body_fields=embed_body_fields,
+        )
+        if solved_result.errors:
+            raise RequestValidationError(
+                solved_result.errors, body=None, endpoint_ctx=endpoint_context(request)
+            )
+        raw_response = await run_endpoint_function(
+            dependant=dependant, values=solved_result.values, is_coroutine=is_coroutine
+        )
+        if isinstance(raw_response, Response):
+            if raw_response.background is None:
+                raw_response.background = solved_result.background_tasks
+            return raw_response
+        content = await serialize_response(
+            field=response_field,
+            response_content=raw_response,
+            include=response_model_include,
+            exclude=response_model_exclude,
+            by_alias=response_model_by_alias,
+            exclude_unset=response_model_exclude_unset,
+            exclude_defaults=response_model_exclude_defaults,
+            exclude_none=response_model_exclude_none,
+            is_coroutine=is_coroutine,
+            dump_json=use_dump_json,
+            endpoint_ctx_factory=functools.partial(endpoint_context, request),
+        )
+        return build_response(content, solved_result)
+
+    if not body_field and not is_sse_stream and not is_json_stream and not is_generator:
+        return plain_app
 
     async def app(request: Request) -> Response:
         response: Response | None = None
@@ -431,18 +518,7 @@ def get_request_handler(
         assert isinstance(file_stack, AsyncExitStack), (
             "fastapi_middleware_astack not found in request scope"
         )
-
-        # Extract endpoint context for error messages
-        endpoint_ctx = (
-            _extract_endpoint_context(dependant.call)
-            if dependant.call
-            else EndpointContext()
-        )
-
-        if dependant.path:
-            # For mounted sub-apps, include the mount path prefix
-            mount_path = request.scope.get("root_path", "").rstrip("/")
-            endpoint_ctx["path"] = f"{request.method} {mount_path}{dependant.path}"
+        endpoint_ctx = endpoint_context(request)
 
         # Read body and auto-close files
         try:
@@ -459,13 +535,8 @@ def get_request_handler(
                         if not content_type_value:
                             if not actual_strict_content_type:
                                 json_body = await request.json()
-                        else:
-                            message = email.message.Message()
-                            message["content-type"] = content_type_value
-                            if message.get_content_maintype() == "application":
-                                subtype = message.get_content_subtype()
-                                if subtype == "json" or subtype.endswith("+json"):
-                                    json_body = await request.json()
+                        elif is_json_content_type(content_type_value):
+                            json_body = await request.json()
                         if json_body != Undefined:
                             body = json_body
                         else:
@@ -703,9 +774,7 @@ def get_request_handler(
                     **response_args,
                 )
                 merge_dependency_headers(response, solved_result.response)
-            elif _is_async_gen_callable(dependant.call) or _is_gen_callable(
-                dependant.call
-            ):
+            elif is_generator:
                 # Raw streaming with explicit response_class (e.g. StreamingResponse)
                 gen = dependant.call(**solved_result.values)
                 if _is_async_gen_callable(dependant.call):
@@ -736,17 +805,6 @@ def get_request_handler(
                         raw_response.background = solved_result.background_tasks
                     response = raw_response
                 else:
-                    response_args = _build_response_args(
-                        status_code=status_code, solved_result=solved_result
-                    )
-                    # Use the fast path (dump_json) when no custom response
-                    # class was set and a response field with a TypeAdapter
-                    # exists. Serializes directly to JSON bytes via Pydantic's
-                    # Rust core, skipping the intermediate Python dict +
-                    # json.dumps() step.
-                    use_dump_json = response_field is not None and isinstance(
-                        response_class, DefaultPlaceholder
-                    )
                     content = await serialize_response(
                         field=response_field,
                         response_content=raw_response,
@@ -760,17 +818,7 @@ def get_request_handler(
                         endpoint_ctx=endpoint_ctx,
                         dump_json=use_dump_json,
                     )
-                    if use_dump_json:
-                        response = Response(
-                            content=content,
-                            media_type="application/json",
-                            **response_args,
-                        )
-                    else:
-                        response = actual_response_class(content, **response_args)
-                    if not is_body_allowed_for_status_code(response.status_code):
-                        response.body = b""
-                    merge_dependency_headers(response, solved_result.response)
+                    response = build_response(content, solved_result)
         if errors:
             validation_error = RequestValidationError(
                 errors, body=body, endpoint_ctx=endpoint_ctx
