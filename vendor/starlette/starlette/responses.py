@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import hashlib
 import http.cookies
 import json
@@ -24,6 +25,13 @@ from starlette.concurrency import iterate_in_threadpool
 from starlette.datastructures import URL, Headers, MutableHeaders
 from starlette.requests import ClientDisconnect
 from starlette.types import Message, Receive, Scope, Send
+
+
+@functools.lru_cache(maxsize=256)
+def content_type_header(content_type: str, charset: str) -> tuple[bytes, bytes]:
+    if content_type.startswith("text/") and "charset=" not in content_type.lower():
+        content_type += "; charset=" + charset
+    return (b"content-type", content_type.encode("latin-1"))
 
 
 class Response:
@@ -69,14 +77,11 @@ class Response:
             and populate_content_length
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
-            content_length = str(len(body))
-            raw_headers.append((b"content-length", content_length.encode("latin-1")))
+            raw_headers.append((b"content-length", b"%d" % len(body)))
 
         content_type = self.media_type
         if content_type is not None and populate_content_type:
-            if content_type.startswith("text/") and "charset=" not in content_type.lower():
-                content_type += "; charset=" + self.charset
-            raw_headers.append((b"content-type", content_type.encode("latin-1")))
+            raw_headers.append(content_type_header(content_type, self.charset))
 
         self.raw_headers = raw_headers
 
@@ -178,6 +183,14 @@ class PlainTextResponse(Response):
     media_type = "text/plain"
 
 
+JSON_ENCODER = json.JSONEncoder(
+    ensure_ascii=False,
+    allow_nan=False,
+    indent=None,
+    separators=(",", ":"),
+)
+
+
 class JSONResponse(Response):
     media_type = "application/json"
 
@@ -192,13 +205,7 @@ class JSONResponse(Response):
         super().__init__(content, status_code, headers, media_type, background)
 
     def render(self, content: Any) -> bytes:
-        return json.dumps(
-            content,
-            ensure_ascii=False,
-            allow_nan=False,
-            indent=None,
-            separators=(",", ":"),
-        ).encode("utf-8")
+        return JSON_ENCODER.encode(content).encode("utf-8")
 
 
 class RedirectResponse(Response):

@@ -27,25 +27,25 @@ def get_explicit() -> Item:
 client = TestClient(app)
 
 
-def test_default_response_class_skips_json_dumps():
+def test_default_response_class_skips_json_response_render():
     """When no response_class is set, the fast path serializes directly to
-    JSON bytes via Pydantic's dump_json and never calls json.dumps."""
-    with patch(
-        "starlette.responses.json.dumps", wraps=__import__("json").dumps
-    ) as mock_dumps:
+    JSON bytes via Pydantic's dump_json and never renders a JSONResponse."""
+    with patch.object(
+        JSONResponse, "render", autospec=True, side_effect=JSONResponse.render
+    ) as mock_render:
         response = client.get("/default")
     assert response.status_code == 200
     assert response.json() == {"name": "widget", "price": 9.99}
-    mock_dumps.assert_not_called()
+    mock_render.assert_not_called()
 
 
-def test_explicit_response_class_uses_json_dumps():
+def test_explicit_response_class_uses_json_response_render():
     """When response_class is explicitly set to JSONResponse, the normal path
-    is used and json.dumps is called via JSONResponse.render()."""
-    with patch(
-        "starlette.responses.json.dumps", wraps=__import__("json").dumps
-    ) as mock_dumps:
+    is used and the content goes through JSONResponse.render()."""
+    with patch.object(
+        JSONResponse, "render", autospec=True, side_effect=JSONResponse.render
+    ) as mock_render:
         response = client.get("/explicit")
     assert response.status_code == 200
     assert response.json() == {"name": "widget", "price": 9.99}
-    mock_dumps.assert_called_once()
+    mock_render.assert_called_once()

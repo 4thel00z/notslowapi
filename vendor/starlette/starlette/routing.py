@@ -244,7 +244,7 @@ class Route(BaseRoute):
     def matches(self, scope: Scope) -> tuple[Match, Scope]:
         if scope["type"] != "http":
             return Match.NONE, {}
-        route_path = get_route_path(scope)
+        route_path = scope["path"] if not scope.get("root_path") else get_route_path(scope)
         if not self.param_convertors:
             if route_path != self.path:
                 return Match.NONE, {}

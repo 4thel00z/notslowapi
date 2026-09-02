@@ -25,12 +25,14 @@ class Rung:
     body: str | None = None
     loop: str = "uvloop"
     http: str = "httptools"
+    gc_freeze: bool = False
 
     @property
     def label(self) -> str:
+        suffix = "[gc_freeze]" if self.gc_freeze else ""
         if self.loop == "uvloop" and self.http == "httptools":
-            return self.name
-        return f"{self.name}[{self.loop}+{self.http}]"
+            return self.name + suffix
+        return f"{self.name}[{self.loop}+{self.http}]{suffix}"
 
 
 @dataclass
@@ -64,6 +66,14 @@ LADDER: list[Rung] = [
         body='{"name": "widget", "price": 1.5, "tags": ["a", "b"]}',
     ),
     Rung("l2_fastapi_dict", f"{BASE}/", loop="asyncio", http="h11"),
+    Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello", gc_freeze=True),
+    Rung(
+        "l4_fastapi_model",
+        f"{BASE}/items",
+        method="POST",
+        body='{"name": "widget", "price": 1.5, "tags": ["a", "b"]}',
+        gc_freeze=True,
+    ),
 ]
 
 
@@ -80,6 +90,8 @@ def wait_for_port(timeout_s: float = 15.0) -> None:
 
 def start_server(rung: Rung, profile: str | None) -> subprocess.Popen[bytes]:
     env = dict(os.environ, BENCH_RUNG=rung.name, BENCH_LABEL=rung.label)
+    if rung.gc_freeze:
+        env["BENCH_GC_FREEZE"] = "1"
     if profile:
         env["BENCH_PROFILE"] = profile
     cmd = [

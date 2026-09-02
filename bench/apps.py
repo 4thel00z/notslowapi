@@ -1,5 +1,6 @@
 """ASGI apps forming a calibration ladder: each rung adds one layer of the stack."""
 
+import gc
 import json
 import os
 from collections.abc import Awaitable, Callable, MutableMapping
@@ -155,6 +156,9 @@ RUNGS: dict[str, ASGIApp] = {
 def selected() -> ASGIApp:
     name = os.environ["BENCH_RUNG"]
     app = RUNGS[name]
+    if os.environ.get("BENCH_GC_FREEZE") == "1":
+        gc.collect()
+        gc.freeze()
     if os.environ.get("BENCH_PROFILE") != "pyinstrument":
         return app
     return with_pyinstrument(app, os.environ.get("BENCH_LABEL", name))
