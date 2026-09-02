@@ -514,10 +514,6 @@ def get_request_handler(
 
     async def app(request: Request) -> Response:
         response: Response | None = None
-        file_stack = request.scope.get("fastapi_middleware_astack")
-        assert isinstance(file_stack, AsyncExitStack), (
-            "fastapi_middleware_astack not found in request scope"
-        )
         endpoint_ctx = endpoint_context(request)
 
         # Read body and auto-close files
@@ -526,6 +522,11 @@ def get_request_handler(
             if body_field:
                 if is_body_form:
                     body = await request.form()
+                    file_stack = request.scope.get("fastapi_inner_astack")
+                    if not isinstance(file_stack, AsyncExitStack):
+                        raise RuntimeError(
+                            "form body needs an exit stack in the request scope"
+                        )
                     file_stack.push_async_callback(body.close)
                 else:
                     body_bytes = await request.body()
@@ -1151,7 +1152,12 @@ def _populate_api_route_state(
         response_class, DefaultPlaceholder
     )
     route.uses_exit_stacks = (
-        route.is_sse_stream or dependant_has_generator_dependencies(route.dependant)
+        route.is_sse_stream
+        or dependant_has_generator_dependencies(route.dependant)
+        or (
+            route.body_field is not None
+            and isinstance(route.body_field.field_info, params.Form)
+        )
     )
     if isinstance(response_model, DefaultPlaceholder):
         return_annotation = get_typed_return_annotation(endpoint)

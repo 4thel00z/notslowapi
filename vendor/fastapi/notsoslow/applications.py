@@ -13,7 +13,6 @@ from notsoslow.exception_handlers import (
 )
 from notsoslow.exceptions import RequestValidationError, WebSocketRequestValidationError
 from notsoslow.logger import logger
-from notsoslow.middleware.asyncexitstack import AsyncExitStackMiddleware
 from notsoslow.openapi.docs import (
     get_redoc_html,
     get_swagger_ui_html,
@@ -1039,26 +1038,6 @@ class FastAPI(Starlette):
                     handlers=exception_handlers,
                     debug=debug,
                 ),
-                # Add FastAPI-specific AsyncExitStackMiddleware for closing files.
-                # Before this was also used for closing dependencies with yield but
-                # those now have their own AsyncExitStack, to properly support
-                # streaming responses while keeping compatibility with the previous
-                # versions (as of writing 0.117.1) that allowed doing
-                # except HTTPException inside a dependency with yield.
-                # This needs to happen after user middlewares because those create a
-                # new contextvars context copy by using a new AnyIO task group.
-                # This AsyncExitStack preserves the context for contextvars, not
-                # strictly necessary for closing files but it was one of the original
-                # intentions.
-                # If the AsyncExitStack lived outside of the custom middlewares and
-                # contextvars were set, for example in a dependency with 'yield'
-                # in that internal contextvars context, the values would not be
-                # available in the outer context of the AsyncExitStack.
-                # By placing the middleware and the AsyncExitStack here, inside all
-                # user middlewares, the same context is used.
-                # This is currently not needed, only for closing files, but used to be
-                # important when dependencies with yield were closed here.
-                Middleware(AsyncExitStackMiddleware),
             ]
         )
 
