@@ -164,6 +164,9 @@ class ModelField:
                 Annotated[annotated_args],  # ty: ignore[invalid-type-form]
                 config=self.config,
             )
+        self.is_sequence: bool = shared.field_annotation_is_sequence(
+            self.field_info.annotation
+        )
 
     def get_default(self) -> Any:
         if self.field_info.is_required():

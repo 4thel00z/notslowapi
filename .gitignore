@@ -6,3 +6,4 @@ bench/out/
 .pytest_cache/
 .ruff_cache/
 dist/
+log.txt

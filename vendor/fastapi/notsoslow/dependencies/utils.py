@@ -36,7 +36,6 @@ from notsoslow._compat import (
     evaluate_forwardref,
     field_annotation_is_scalar,
     field_annotation_is_scalar_sequence,
-    field_annotation_is_sequence,
     get_cached_model_fields,
     get_missing_field_error,
     is_bytes_or_nonable_bytes_annotation,
@@ -751,8 +750,8 @@ def _get_multidict_value(
 ) -> Any:
     alias = alias or get_validation_alias(field)
     if (
-        (not _is_json_field(field))
-        and field_annotation_is_sequence(field.field_info.annotation)
+        field.is_sequence
+        and (not _is_json_field(field))
         and isinstance(values, (ImmutableMultiDict, Headers))
     ):
         value = values.getlist(alias)
@@ -765,16 +764,66 @@ def _get_multidict_value(
             and isinstance(value, str)  # For type checks
             and value == ""
         )
-        or (
-            field_annotation_is_sequence(field.field_info.annotation)
-            and len(value) == 0
-        )
+        or (field.is_sequence and len(value) == 0)
     ):
         if field.field_info.is_required():
             return
         else:
             return deepcopy(field.default)
     return value
+
+
+def request_params_to_model_arg(
+    field: ModelField,
+    received_params: Mapping[str, Any] | QueryParams | Headers,
+) -> tuple[dict[str, Any], list[Any]]:
+    fields_to_extract = get_cached_model_fields(field.field_info.annotation)
+    # If headers are in a Pydantic model, the way to disable convert_underscores
+    # would be with Header(convert_underscores=False) at the Pydantic model level
+    default_convert_underscores = getattr(field.field_info, "convert_underscores", True)
+
+    params_to_process: dict[str, Any] = {}
+    processed_keys = set()
+
+    for sub_field in fields_to_extract:
+        alias = None
+        if isinstance(received_params, Headers):
+            # Handle fields extracted from a Pydantic Model for a header, each field
+            # doesn't have a FieldInfo of type Header with the default convert_underscores=True
+            convert_underscores = getattr(
+                sub_field.field_info, "convert_underscores", default_convert_underscores
+            )
+            if convert_underscores:
+                alias = get_validation_alias(sub_field)
+                if alias == sub_field.name:
+                    alias = alias.replace("_", "-")
+        value = _get_multidict_value(sub_field, received_params, alias=alias)
+        if value is not None:
+            params_to_process[get_validation_alias(sub_field)] = value
+        processed_keys.add(alias or get_validation_alias(sub_field))
+        # For headers with convert_underscores=True, mark both the converted
+        # header name and the original field alias as processed to avoid
+        # accepting the original alias as an extra header.
+        processed_keys.add(get_validation_alias(sub_field))
+
+    for key in received_params.keys():
+        if key not in processed_keys:
+            if isinstance(received_params, (ImmutableMultiDict, Headers)):
+                value = received_params.getlist(key)
+                if isinstance(value, list) and (len(value) == 1):
+                    params_to_process[key] = value[0]
+                else:
+                    params_to_process[key] = value
+            else:
+                params_to_process[key] = received_params.get(key)
+
+    field_info = field.field_info
+    assert isinstance(field_info, params.Param), "Params must be subclasses of Param"
+    loc: tuple[str, ...] = (field_info.in_.value,)
+    v_, errors_ = _validate_value_with_model_field(
+        field=field, value=params_to_process, values={}, loc=loc
+    )
+    return {field.name: v_}, errors_
 
 
 def request_params_to_args(
@@ -788,74 +837,19 @@ def request_params_to_args(
         return values, errors
 
     first_field = fields[0]
-    fields_to_extract = fields
-    single_not_embedded_field = False
-    default_convert_underscores = True
     if len(fields) == 1 and lenient_issubclass(
         first_field.field_info.annotation, BaseModel
     ):
-        fields_to_extract = get_cached_model_fields(first_field.field_info.annotation)
-        single_not_embedded_field = True
-        # If headers are in a Pydantic model, the way to disable convert_underscores
-        # would be with Header(convert_underscores=False) at the Pydantic model level
-        default_convert_underscores = getattr(
-            first_field.field_info, "convert_underscores", True
-        )
-
-    params_to_process: dict[str, Any] = {}
-
-    processed_keys = set()
-
-    for field in fields_to_extract:
-        alias = None
-        if isinstance(received_params, Headers):
-            # Handle fields extracted from a Pydantic Model for a header, each field
-            # doesn't have a FieldInfo of type Header with the default convert_underscores=True
-            convert_underscores = getattr(
-                field.field_info, "convert_underscores", default_convert_underscores
-            )
-            if convert_underscores:
-                alias = get_validation_alias(field)
-                if alias == field.name:
-                    alias = alias.replace("_", "-")
-        value = _get_multidict_value(field, received_params, alias=alias)
-        if value is not None:
-            params_to_process[get_validation_alias(field)] = value
-        processed_keys.add(alias or get_validation_alias(field))
-        # For headers with convert_underscores=True, mark both the converted
-        # header name and the original field alias as processed to avoid
-        # accepting the original alias as an extra header.
-        processed_keys.add(get_validation_alias(field))
-
-    for key in received_params.keys():
-        if key not in processed_keys:
-            if isinstance(received_params, (ImmutableMultiDict, Headers)):
-                value = received_params.getlist(key)
-                if isinstance(value, list) and (len(value) == 1):
-                    params_to_process[key] = value[0]
-                else:
-                    params_to_process[key] = value
-            else:
-                params_to_process[key] = received_params.get(key)
-
-    if single_not_embedded_field:
-        field_info = first_field.field_info
-        assert isinstance(field_info, params.Param), (
-            "Params must be subclasses of Param"
-        )
-        loc: tuple[str, ...] = (field_info.in_.value,)
-        v_, errors_ = _validate_value_with_model_field(
-            field=first_field, value=params_to_process, values=values, loc=loc
-        )
-        return {first_field.name: v_}, errors_
+        return request_params_to_model_arg(first_field, received_params)
 
     for field in fields:
-        value = _get_multidict_value(field, received_params)
+        alias = get_validation_alias(field)
+        value = _get_multidict_value(field, received_params, alias=alias)
         field_info = field.field_info
         assert isinstance(field_info, params.Param), (
             "Params must be subclasses of Param"
         )
-        loc = (field_info.in_.value, get_validation_alias(field))
+        loc = (field_info.in_.value, alias)
         v_, errors_ = _validate_value_with_model_field(
             field=field, value=value, values=values, loc=loc
         )
