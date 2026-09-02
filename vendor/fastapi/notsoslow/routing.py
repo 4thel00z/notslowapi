@@ -3129,8 +3129,35 @@ class APIRouter(routing.Router):
 
         partial: tuple[BaseRoute, Scope] | None = None
         route_path = get_route_path(scope)
+        scope_type = scope["type"]
         for route in self.candidate_routes(route_path):
-            match, child_scope = route.matches(scope)
+            if (
+                scope_type == "http"
+                and type(route) is APIRoute
+                and not route.param_convertors
+                and route.path == route_path
+            ):
+                effective_context = _get_scope_effective_route_context(scope)
+                if (
+                    effective_context is not None
+                    and effective_context.original_route is route
+                ):
+                    match, child_scope = route.matches(scope)
+                else:
+                    parent_params = scope.get("path_params")
+                    child_scope = {
+                        "endpoint": route.endpoint,
+                        "path_params": dict(parent_params) if parent_params else {},
+                        "route": route,
+                    }
+                    methods = route.methods
+                    match = (
+                        Match.PARTIAL
+                        if methods and scope["method"] not in methods
+                        else Match.FULL
+                    )
+            else:
+                match, child_scope = route.matches(scope)
             if match == Match.FULL:
                 scope.update(child_scope)
                 await route.handle(scope, receive, send)
