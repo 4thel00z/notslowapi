@@ -13,6 +13,19 @@ from starlette.websockets import WebSocket
 ExceptionHandlers = dict[Any, ExceptionHandler]
 StatusHandlers = dict[int, ExceptionHandler]
 
+RESPONSE_STARTED_KEY = "starlette.response_started"
+
+
+def tracking_sender(send: Send, tracker: list[bool]) -> Send:
+    """Wrap send so tracker[0] becomes True once http.response.start has been sent."""
+
+    def sender(message: Message) -> Awaitable[None]:
+        if message["type"] == "http.response.start":
+            tracker[0] = True
+        return send(message)
+
+    return sender
+
 
 def _lookup_exception_handler(exc_handlers: ExceptionHandlers, exc: Exception) -> ExceptionHandler | None:
     for cls in type(exc).__mro__:
@@ -32,14 +45,13 @@ async def run_handling_exceptions(
 
     conn is the connection object handed to the handler; None builds one from the scope on demand.
     """
-    response_started = False
-
-    def sender(message: Message) -> Awaitable[None]:
-        nonlocal response_started
-
-        if message["type"] == "http.response.start":
-            response_started = True
-        return send(message)
+    tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+    if tracker is None:
+        tracker = [False]
+        scope[RESPONSE_STARTED_KEY] = tracker
+        sender = tracking_sender(send, tracker)
+    else:
+        sender = send
 
     try:
         await app(scope, receive, sender)
@@ -62,7 +74,7 @@ async def run_handling_exceptions(
         if handler is None:
             raise exc
 
-        if response_started:
+        if tracker[0]:
             raise RuntimeError("Caught handled exception, but response already started.") from exc
 
         if conn is None:

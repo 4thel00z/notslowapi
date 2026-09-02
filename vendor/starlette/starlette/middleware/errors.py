@@ -4,13 +4,13 @@ import html
 import inspect
 import sys
 import traceback
-from collections.abc import Awaitable
 
+from starlette._exception_handler import RESPONSE_STARTED_KEY, tracking_sender
 from starlette._utils import is_async_callable
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, PlainTextResponse, Response
-from starlette.types import ASGIApp, ExceptionHandler, Message, Receive, Scope, Send
+from starlette.types import ASGIApp, ExceptionHandler, Receive, Scope, Send
 
 STYLES = """
 p {
@@ -152,14 +152,9 @@ class ServerErrorMiddleware:
             await self.app(scope, receive, send)
             return
 
-        response_started = False
-
-        def _send(message: Message) -> Awaitable[None]:
-            nonlocal response_started, send
-
-            if message["type"] == "http.response.start":
-                response_started = True
-            return send(message)
+        tracker = [False]
+        scope[RESPONSE_STARTED_KEY] = tracker
+        _send = tracking_sender(send, tracker)
 
         try:
             await self.app(scope, receive, _send)
@@ -178,7 +173,7 @@ class ServerErrorMiddleware:
                 else:
                     response = await run_in_threadpool(self.handler, request, exc)  # type: ignore[arg-type]
 
-            if not response_started:
+            if not tracker[0]:
                 await response(scope, receive, send)
 
             # We always continue to raise the exception.
