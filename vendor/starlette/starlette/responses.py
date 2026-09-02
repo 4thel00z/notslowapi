@@ -11,6 +11,7 @@ from collections.abc import AsyncIterable, Awaitable, Callable, Iterable, Mappin
 from datetime import datetime
 from email.utils import format_datetime, formatdate
 from functools import partial
+from json.encoder import c_make_encoder, encode_basestring
 from mimetypes import guess_type
 from secrets import token_hex
 from typing import Any, Literal
@@ -191,6 +192,18 @@ JSON_ENCODER = json.JSONEncoder(
 )
 
 
+def encode_json(content: Any) -> str:
+    """JSON_ENCODER.encode(content) through the C encoder without the two Python method layers."""
+    if c_make_encoder is None:
+        return JSON_ENCODER.encode(content)
+    if isinstance(content, str):
+        return encode_basestring(content)
+    chunks = c_make_encoder({}, JSON_ENCODER.default, encode_basestring, None, ":", ",", False, False, False)(
+        content, 0
+    )
+    return "".join(chunks)
+
+
 class JSONResponse(Response):
     media_type = "application/json"
 
@@ -205,7 +218,7 @@ class JSONResponse(Response):
         super().__init__(content, status_code, headers, media_type, background)
 
     def render(self, content: Any) -> bytes:
-        return JSON_ENCODER.encode(content).encode("utf-8")
+        return encode_json(content).encode("utf-8")
 
 
 class RedirectResponse(Response):

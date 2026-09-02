@@ -13,7 +13,13 @@ from enum import Enum
 from re import Pattern
 from typing import Any, SupportsIndex, TypeVar
 
-from starlette._exception_handler import run_handling_exceptions
+from starlette._exception_handler import (
+    RESPONSE_STARTED_KEY,
+    find_exception_handler,
+    run_handling_exceptions,
+    send_handler_response,
+    tracking_sender,
+)
 from starlette._utils import get_route_path, is_async_callable, parse_host_header
 from starlette.concurrency import run_in_threadpool
 from starlette.convertors import CONVERTOR_TYPES, Convertor
@@ -57,12 +63,23 @@ def request_response(
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         request = Request(scope, receive, send)
-
-        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        try:
             response = await f(request)
-            await response(scope, receive, send)
-
-        await run_handling_exceptions(app, request, scope, receive, send)
+            await response(scope, receive, sender)
+        except Exception as exc:
+            handler = find_exception_handler(exc, scope)
+            if handler is None:
+                raise exc
+            if tracker[0]:
+                raise RuntimeError("Caught handled exception, but response already started.") from exc
+            await send_handler_response(handler, exc, request, scope, receive, sender)
 
     return app
 

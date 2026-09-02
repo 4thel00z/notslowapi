@@ -7,6 +7,7 @@ from starlette.datastructures import State, URLPath
 from starlette.middleware import Middleware, _MiddlewareFactory
 from starlette.middleware.body_limit import RequestBodyLimitMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
+from starlette.middleware.exception_handling import ExceptionHandlingMiddleware
 from starlette.middleware.exceptions import ExceptionMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -70,6 +71,14 @@ class Starlette:
                 error_handler = value
             else:
                 exception_handlers[key] = value
+
+        if not self.user_middleware and self.max_body_size is None:
+            return ExceptionHandlingMiddleware(
+                self.router,
+                error_handler=error_handler,
+                exception_handlers=exception_handlers,
+                debug=debug,
+            )
 
         middleware = [Middleware(ServerErrorMiddleware, handler=error_handler, debug=debug)]
         if self.max_body_size is not None:
