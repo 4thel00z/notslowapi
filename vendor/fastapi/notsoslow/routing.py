@@ -1933,33 +1933,39 @@ class _IncludedRouter(BaseRoute):
         self, scope: Scope
     ) -> tuple[Match, Scope, BaseRoute | None, _EffectiveRouteContext | None]:
         partial: tuple[Scope, BaseRoute, _EffectiveRouteContext | None] | None = None
-        for candidate in self.candidates_for(get_route_path(scope)):
-            if isinstance(candidate, _IncludedRouter):
-                match, child_scope = candidate.matches(scope)
-                route: BaseRoute = candidate
-                route_context = None
-            elif isinstance(candidate.original_route, APIRoute):
-                route_context = candidate
-                fastapi_scope = _get_fastapi_scope(scope)
-                previous_context = fastapi_scope.get(
-                    _FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY, _SCOPE_MISSING
-                )
-                fastapi_scope[_FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY] = route_context
-                try:
-                    match, child_scope = candidate.original_route.matches(scope)
-                finally:
+        fastapi_scope = _get_fastapi_scope(scope)
+        previous_context = fastapi_scope.get(
+            _FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY, _SCOPE_MISSING
+        )
+        try:
+            for candidate in self.candidates_for(get_route_path(scope)):
+                if isinstance(candidate, _IncludedRouter):
                     _restore_fastapi_scope_key(
                         scope, _FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY, previous_context
                     )
-                route = candidate.original_route
-            else:
-                route_context = candidate
-                match, child_scope = candidate.matches(scope)
-                route = candidate.starlette_route or candidate.original_route
-            if match == Match.FULL:
-                return match, child_scope, route, route_context
-            if match == Match.PARTIAL and partial is None:
-                partial = (child_scope, route, route_context)
+                    match, child_scope = candidate.matches(scope)
+                    route: BaseRoute = candidate
+                    route_context = None
+                elif isinstance(candidate.original_route, APIRoute):
+                    route_context = candidate
+                    fastapi_scope[_FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY] = route_context
+                    match, child_scope = candidate.original_route.matches(scope)
+                    route = candidate.original_route
+                else:
+                    route_context = candidate
+                    _restore_fastapi_scope_key(
+                        scope, _FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY, previous_context
+                    )
+                    match, child_scope = candidate.matches(scope)
+                    route = candidate.starlette_route or candidate.original_route
+                if match == Match.FULL:
+                    return match, child_scope, route, route_context
+                if match == Match.PARTIAL and partial is None:
+                    partial = (child_scope, route, route_context)
+        finally:
+            _restore_fastapi_scope_key(
+                scope, _FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY, previous_context
+            )
         if partial is not None:
             child_scope, route, route_context = partial
             return Match.PARTIAL, child_scope, route, route_context
@@ -2806,6 +2812,8 @@ class APIRouter(routing.Router):
         self.generate_unique_id_function = generate_unique_id_function
         self.strict_content_type = strict_content_type
         self._routes_version = 0
+        self._nested_included: list[_IncludedRouter] = []
+        self._nested_included_key: tuple[int, int | None, int] | None = None
         self._low_priority_routes: list[BaseRoute] = []
         self._frontend_routes: _FrontendRouteGroup | None = None
 
@@ -2820,10 +2828,20 @@ class APIRouter(routing.Router):
             return self._routes_version
         seen.add(router_id)
         version = self._routes_version
-        for route in self.routes:
-            if isinstance(route, _IncludedRouter):
-                version += route.original_router._get_routes_version(seen)
+        for route in self._nested_included_routers():
+            version += route.original_router._get_routes_version(seen)
         return version
+
+    def _nested_included_routers(self) -> list["_IncludedRouter"]:
+        routes = self.routes
+        list_version = routes.version if isinstance(routes, routing.RouteList) else None
+        key = (self._routes_version, list_version, len(routes))
+        if key != self._nested_included_key:
+            self._nested_included = [
+                route for route in routes if isinstance(route, _IncludedRouter)
+            ]
+            self._nested_included_key = key
+        return self._nested_included
 
     def _contains_router(
         self, router: "APIRouter", seen: set[int] | None = None
