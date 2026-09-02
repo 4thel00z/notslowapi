@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 
 from docs_src.custom_response.tutorial007_py310 import app
 

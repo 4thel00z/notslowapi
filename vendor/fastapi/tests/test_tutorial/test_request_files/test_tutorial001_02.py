@@ -2,7 +2,7 @@ import importlib
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 from ...utils import needs_py310

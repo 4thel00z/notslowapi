@@ -1,8 +1,8 @@
 import warnings
 
-from fastapi import APIRouter, FastAPI
-from fastapi.routing import APIRoute
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, FastAPI
+from notsoslow.routing import APIRoute
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 from pydantic import BaseModel
 

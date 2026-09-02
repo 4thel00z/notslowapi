@@ -1,5 +1,5 @@
 import pytest
-from fastapi import FastAPI, Query
+from notsoslow import FastAPI, Query
 from pydantic import BaseModel
 
 

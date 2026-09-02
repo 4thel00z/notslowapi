@@ -1,5 +1,5 @@
-from fastapi import Depends, FastAPI
-from fastapi.security import OAuth2PasswordBearer
+from notsoslow import Depends, FastAPI
+from notsoslow.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
 app = FastAPI()

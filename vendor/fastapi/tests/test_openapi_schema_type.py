@@ -1,5 +1,5 @@
 import pytest
-from fastapi.openapi.models import Schema, SchemaType
+from notsoslow.openapi.models import Schema, SchemaType
 
 
 @pytest.mark.parametrize(

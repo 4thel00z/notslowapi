@@ -2,8 +2,8 @@ from typing import Annotated
 
 import pytest
 from dirty_equals import AnyThing, IsOneOf, IsPartialDict
-from fastapi import FastAPI, Header
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Header
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 from pydantic import BaseModel, Field
 

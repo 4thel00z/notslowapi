@@ -1,6 +1,6 @@
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from fastapi.websockets import WebSocket
+from notsoslow import FastAPI
+from notsoslow.testclient import TestClient
+from notsoslow.websockets import WebSocket
 
 app = FastAPI()
 

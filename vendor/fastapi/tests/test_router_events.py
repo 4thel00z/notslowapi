@@ -2,8 +2,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import pytest
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, FastAPI, Request
+from notsoslow.testclient import TestClient
 from pydantic import BaseModel
 
 

@@ -2,8 +2,8 @@ from typing import Annotated
 
 import pytest
 from dirty_equals import IsOneOf, IsPartialDict
-from fastapi import Body, FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import Body, FastAPI
+from notsoslow.testclient import TestClient
 from pydantic import BaseModel, Field
 
 from .utils import get_body_model_name

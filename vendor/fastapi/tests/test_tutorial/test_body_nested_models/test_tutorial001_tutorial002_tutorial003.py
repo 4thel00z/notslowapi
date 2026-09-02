@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 from dirty_equals import IsList
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from inline_snapshot import Is, snapshot
 
 from ...utils import needs_py310

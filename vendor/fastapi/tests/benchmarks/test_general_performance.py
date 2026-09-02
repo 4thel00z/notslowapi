@@ -4,8 +4,8 @@ from collections.abc import Iterator
 from typing import Annotated, Any
 
 import pytest
-from fastapi import Depends, FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI
+from notsoslow.testclient import TestClient
 from pydantic import BaseModel
 
 if "--codspeed" not in sys.argv:

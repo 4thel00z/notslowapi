@@ -8,8 +8,8 @@ from tests.utils import skip_module_if_py_gte_314
 if sys.version_info >= (3, 14):
     skip_module_if_py_gte_314()
 
-from fastapi import FastAPI
-from fastapi.exceptions import PydanticV1NotSupportedError
+from notsoslow import FastAPI
+from notsoslow.exceptions import PydanticV1NotSupportedError
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)

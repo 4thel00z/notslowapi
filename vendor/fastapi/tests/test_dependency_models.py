@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, Callable, Generator
 from typing import Any
 
-from fastapi.dependencies.models import (
+from notsoslow.dependencies.models import (
     Dependant,
     _get_cache_key,
     _get_computed_scope,
@@ -16,7 +16,7 @@ from fastapi.dependencies.models import (
     _is_security_scheme,
     _uses_scopes,
 )
-from fastapi.security import APIKeyHeader
+from notsoslow.security import APIKeyHeader
 
 
 def sync_dependency() -> None:

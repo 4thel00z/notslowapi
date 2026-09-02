@@ -1,7 +1,7 @@
 import pytest
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.routing import APIRoute, APIWebSocketRoute
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Request, WebSocket, WebSocketDisconnect
+from notsoslow.routing import APIRoute, APIWebSocketRoute
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

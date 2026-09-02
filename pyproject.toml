@@ -1,0 +1,45 @@
+[project]
+name = "notslowapi"
+version = "0.0.0"
+description = "Where does FastAPI spend its time"
+requires-python = ">=3.13"
+dependencies = [
+    "notsoslow",
+    "starlette",
+    "uvicorn[standard]>=0.34",
+    "pyinstrument>=5",
+    "orjson>=3",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+test = [
+    "pytest>=9.0.0",
+    "pytest-timeout>=2.4.0",
+    "pytest-xdist[psutil]>=3.0.2",
+    "httpx>=0.23.0,<1.0.0",
+    "anyio[trio]>=3.2.1,<5.0.0",
+    "dirty-equals>=0.9.0",
+    "inline-snapshot>=0.21.1",
+    "pyyaml>=5.3.1,<7.0.0",
+    "python-multipart>=0.0.18",
+    "email-validator>=2.0.0",
+    "flask>=3.0.0,<4.0.0",
+    "a2wsgi>=1.9.0,<=2.0.0",
+    "sqlmodel>=0.0.31",
+    "pyjwt>=2.9.0",
+    "pwdlib[argon2]>=0.2.1",
+    "strawberry-graphql>=0.200.0,<1.0.0",
+    "typer>=0.26.1",
+    "ujson>=5.0.0",
+]
+
+[tool.uv.sources]
+notsoslow = { path = "vendor/fastapi", editable = true }
+starlette = { path = "vendor/starlette", editable = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"

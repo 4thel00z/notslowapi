@@ -1,5 +1,5 @@
 from a2wsgi import WSGIMiddleware
-from fastapi import FastAPI
+from notsoslow import FastAPI
 from flask import Flask, request
 from markupsafe import escape
 

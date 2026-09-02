@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Path, Query
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Path, Query
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

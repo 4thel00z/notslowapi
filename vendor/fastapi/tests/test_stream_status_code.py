@@ -1,9 +1,9 @@
 from collections.abc import AsyncIterable
 
 import pytest
-from fastapi import Depends, FastAPI, Response
-from fastapi.responses import EventSourceResponse, StreamingResponse
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI, Response
+from notsoslow.responses import EventSourceResponse, StreamingResponse
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 SSE_RESPONSE = {

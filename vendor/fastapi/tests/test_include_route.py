@@ -1,6 +1,6 @@
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, FastAPI, Request
+from notsoslow.responses import JSONResponse
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 router = APIRouter()

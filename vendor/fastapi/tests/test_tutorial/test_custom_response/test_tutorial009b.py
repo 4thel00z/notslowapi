@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, cast
 
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 
 from docs_src.custom_response import tutorial009b_py310
 from docs_src.custom_response.tutorial009b_py310 import app

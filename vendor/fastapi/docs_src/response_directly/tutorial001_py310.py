@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from fastapi import FastAPI
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from notsoslow import FastAPI
+from notsoslow.encoders import jsonable_encoder
+from notsoslow.responses import JSONResponse
 from pydantic import BaseModel
 
 

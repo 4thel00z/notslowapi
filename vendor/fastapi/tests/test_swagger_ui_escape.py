@@ -1,4 +1,4 @@
-from fastapi.openapi.docs import get_swagger_ui_html
+from notsoslow.openapi.docs import get_swagger_ui_html
 
 
 def test_init_oauth_html_chars_are_escaped():

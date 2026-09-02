@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI
+from notsoslow import Depends, FastAPI
 
 from .config import Settings
 

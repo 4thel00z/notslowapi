@@ -1,8 +1,8 @@
 import warnings
 
 import pytest
-from fastapi.exceptions import FastAPIDeprecationWarning
-from fastapi.testclient import TestClient
+from notsoslow.exceptions import FastAPIDeprecationWarning
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 with warnings.catch_warnings():
@@ -14,14 +14,14 @@ client = TestClient(app)
 pytest.importorskip("orjson")
 
 
-@pytest.mark.filterwarnings("ignore::fastapi.exceptions.FastAPIDeprecationWarning")
+@pytest.mark.filterwarnings("ignore::notsoslow.exceptions.FastAPIDeprecationWarning")
 def test_get_custom_response():
     response = client.get("/items/")
     assert response.status_code == 200, response.text
     assert response.json() == [{"item_id": "Foo"}]
 
 
-@pytest.mark.filterwarnings("ignore::fastapi.exceptions.FastAPIDeprecationWarning")
+@pytest.mark.filterwarnings("ignore::notsoslow.exceptions.FastAPIDeprecationWarning")
 def test_openapi_schema():
     response = client.get("/openapi.json")
     assert response.status_code == 200, response.text

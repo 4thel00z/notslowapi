@@ -9,9 +9,9 @@ from pathlib import PurePath, PurePosixPath, PureWindowsPath
 from typing import TypedDict
 
 import pytest
-from fastapi._compat import Undefined
-from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import PydanticV1NotSupportedError
+from notsoslow._compat import Undefined
+from notsoslow.encoders import jsonable_encoder
+from notsoslow.exceptions import PydanticV1NotSupportedError
 from pydantic import BaseModel, Field, ValidationError
 
 

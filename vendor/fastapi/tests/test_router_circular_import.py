@@ -1,5 +1,5 @@
 import pytest
-from fastapi import APIRouter
+from notsoslow import APIRouter
 
 
 def test_router_circular_import():

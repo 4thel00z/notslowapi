@@ -1,9 +1,9 @@
 import json
 
 import pytest
-from fastapi import BackgroundTasks, Depends, FastAPI
-from fastapi.responses import StreamingResponse
-from fastapi.testclient import TestClient
+from notsoslow import BackgroundTasks, Depends, FastAPI
+from notsoslow.responses import StreamingResponse
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 state = {

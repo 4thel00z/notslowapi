@@ -3,7 +3,7 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [project]
-name = "fastapi"
+name = "notsoslow"
 dynamic = ["version"]
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 readme = "README.md"
@@ -117,7 +117,7 @@ all = [
 ]
 
 [project.scripts]
-fastapi = "fastapi.cli:main"
+notsoslow = "notsoslow.cli:main"
 
 [dependency-groups]
 dev = [
@@ -187,7 +187,7 @@ translations = [
 ]
 
 [tool.pdm]
-version = { source = "file", path = "fastapi/__init__.py" }
+version = { source = "file", path = "notsoslow/__init__.py" }
 distribution = true
 
 [tool.pdm.build]
@@ -204,12 +204,12 @@ plugins = ["pydantic.mypy"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = "fastapi.concurrency"
+module = "notsoslow.concurrency"
 warn_unused_ignores = false
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "fastapi.tests.*"
+module = "notsoslow.tests.*"
 ignore_missing_imports = true
 check_untyped_defs = true
 
@@ -238,7 +238,7 @@ data_file = "coverage/.coverage"
 source = [
     "docs_src",
     "tests",
-    "fastapi"
+    "notsoslow"
 ]
 relative_files = true
 context = '${CONTEXT}'
@@ -303,7 +303,7 @@ ignore = [
 "docs_src/server_sent_events/tutorial001_py310.py" = ["UP028"]
 
 [tool.ruff.lint.isort]
-known-third-party = ["fastapi", "pydantic", "starlette"]
+known-third-party = ["notsoslow", "pydantic", "starlette"]
 
 [tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.

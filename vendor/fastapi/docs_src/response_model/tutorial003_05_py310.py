@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Response
-from fastapi.responses import RedirectResponse
+from notsoslow import FastAPI, Response
+from notsoslow.responses import RedirectResponse
 
 app = FastAPI()
 

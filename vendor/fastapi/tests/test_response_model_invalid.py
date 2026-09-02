@@ -1,6 +1,6 @@
 import pytest
-from fastapi import FastAPI
-from fastapi.exceptions import FastAPIError
+from notsoslow import FastAPI
+from notsoslow.exceptions import FastAPIError
 
 
 class NonPydanticModel:

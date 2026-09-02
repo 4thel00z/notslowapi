@@ -1,18 +1,18 @@
 from typing import Any, cast
 
-from fastapi import FastAPI, UploadFile
-from fastapi._compat import (
+from notsoslow import FastAPI, UploadFile
+from notsoslow._compat import (
     Undefined,
     is_uploadfile_sequence_annotation,
 )
-from fastapi._compat.shared import is_bytes_sequence_annotation
-from fastapi.testclient import TestClient
+from notsoslow._compat.shared import is_bytes_sequence_annotation
+from notsoslow.testclient import TestClient
 from pydantic import BaseModel, ConfigDict
 from pydantic.fields import FieldInfo
 
 
 def test_model_field_default_required():
-    from fastapi._compat import v2
+    from notsoslow._compat import v2
 
     # For coverage
     field_info = FieldInfo(annotation=str)
@@ -106,7 +106,7 @@ def test_is_uploadfile_sequence_annotation():
 
 def test_serialize_sequence_value_with_optional_list():
     """Test that serialize_sequence_value handles optional lists correctly."""
-    from fastapi._compat import v2
+    from notsoslow._compat import v2
 
     field_info = FieldInfo(annotation=cast(Any, list[str] | None))
     field = v2.ModelField(name="items", field_info=field_info)
@@ -117,7 +117,7 @@ def test_serialize_sequence_value_with_optional_list():
 
 def test_serialize_sequence_value_with_optional_list_pipe_union():
     """Test that serialize_sequence_value handles optional lists correctly (with new syntax)."""
-    from fastapi._compat import v2
+    from notsoslow._compat import v2
 
     field_info = FieldInfo(annotation=cast(Any, list[str] | None))
     field = v2.ModelField(name="items", field_info=field_info)
@@ -130,7 +130,7 @@ def test_serialize_sequence_value_with_none_first_in_union():
     """Test that serialize_sequence_value handles Union[None, List[...]] correctly."""
     from typing import Union
 
-    from fastapi._compat import v2
+    from notsoslow._compat import v2
 
     # Use Union[None, list[str]] to ensure None comes first in the union args
     field_info = FieldInfo(annotation=cast(Any, Union[None, list[str]]))  # noqa: UP007

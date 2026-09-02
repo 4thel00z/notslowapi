@@ -1,6 +1,6 @@
 import http
 
-from fastapi import FastAPI, Path, Query
+from notsoslow import FastAPI, Path, Query
 
 external_docs = {
     "description": "External API documentation.",

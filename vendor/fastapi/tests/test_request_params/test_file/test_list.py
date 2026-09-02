@@ -1,8 +1,8 @@
 from typing import Annotated
 
 import pytest
-from fastapi import FastAPI, File, UploadFile
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, File, UploadFile
+from notsoslow.testclient import TestClient
 
 from .utils import get_body_model_name
 

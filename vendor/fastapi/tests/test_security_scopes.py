@@ -1,8 +1,8 @@
 from typing import Annotated
 
 import pytest
-from fastapi import Depends, FastAPI, Security
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI, Security
+from notsoslow.testclient import TestClient
 
 
 @pytest.fixture(name="call_counter")

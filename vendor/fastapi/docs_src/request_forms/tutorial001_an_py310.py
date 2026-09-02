@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import FastAPI, Form
+from notsoslow import FastAPI, Form
 
 app = FastAPI()
 

@@ -1,5 +1,5 @@
-from fastapi import Body, FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import Body, FastAPI
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 from pydantic import BaseModel
 

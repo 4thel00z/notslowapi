@@ -1,8 +1,8 @@
 from typing import Any
 
-from fastapi import APIRouter, FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, FastAPI
+from notsoslow.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from notsoslow.testclient import TestClient
 
 from tests.utils import needs_orjson
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path
+from notsoslow import FastAPI, Path
 from pydantic import BaseModel
 
 app = FastAPI()

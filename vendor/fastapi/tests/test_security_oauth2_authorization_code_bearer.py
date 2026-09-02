@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Security
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Security
+from notsoslow.security import OAuth2AuthorizationCodeBearer
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 app = FastAPI()

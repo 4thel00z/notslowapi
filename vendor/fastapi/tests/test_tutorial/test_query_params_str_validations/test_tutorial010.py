@@ -1,8 +1,8 @@
 import importlib
 
 import pytest
-from fastapi._compat import PYDANTIC_VERSION_MINOR_TUPLE
-from fastapi.testclient import TestClient
+from notsoslow._compat import PYDANTIC_VERSION_MINOR_TUPLE
+from notsoslow.testclient import TestClient
 from inline_snapshot import Is, snapshot
 
 from ...utils import needs_py310

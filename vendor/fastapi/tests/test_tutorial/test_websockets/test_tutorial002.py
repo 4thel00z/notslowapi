@@ -1,9 +1,9 @@
 import importlib
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from fastapi.websockets import WebSocketDisconnect
+from notsoslow import FastAPI
+from notsoslow.testclient import TestClient
+from notsoslow.websockets import WebSocketDisconnect
 
 from ...utils import needs_py310
 

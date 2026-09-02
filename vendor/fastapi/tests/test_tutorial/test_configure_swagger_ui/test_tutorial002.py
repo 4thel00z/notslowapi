@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 
 from docs_src.configure_swagger_ui.tutorial002_py310 import app
 

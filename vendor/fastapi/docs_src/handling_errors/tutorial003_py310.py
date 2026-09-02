@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from notsoslow import FastAPI, Request
+from notsoslow.responses import JSONResponse
 
 
 class UnicornException(Exception):

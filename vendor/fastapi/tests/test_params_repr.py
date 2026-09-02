@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi.params import Body, Cookie, Header, Param, Path, Query
+from notsoslow.params import Body, Cookie, Header, Param, Path, Query
 
 test_data: list[Any] = ["teststr", None, ..., 1, []]
 

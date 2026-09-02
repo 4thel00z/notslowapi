@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from notsoslow import FastAPI
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight": {"theme": "obsidian"}})
 

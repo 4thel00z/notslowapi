@@ -39,7 +39,7 @@ def test_update_version_file() -> None:
         'ready for production"""\n\n__version__ = "0.136.3"\n'
     )
 
-    new_content = update_version_file(content, "0.136.4", Path("fastapi/__init__.py"))
+    new_content = update_version_file(content, "0.136.4", Path("notsoslow/__init__.py"))
 
     assert new_content == (
         '"""FastAPI framework, high performance, easy to learn, fast to code, '
@@ -51,7 +51,7 @@ def test_update_version_file_requires_newer_version() -> None:
     content = '__version__ = "0.136.3"\n'
 
     with pytest.raises(RuntimeError, match="must be greater"):
-        update_version_file(content, "0.136.3", Path("fastapi/__init__.py"))
+        update_version_file(content, "0.136.3", Path("notsoslow/__init__.py"))
 
 
 def test_update_release_notes() -> None:
@@ -201,7 +201,7 @@ def test_get_release_notes_body_requires_non_empty_section() -> None:
 
 
 def test_cli_updates_configured_files(tmp_path: Path) -> None:
-    version_file = tmp_path / "fastapi" / "__init__.py"
+    version_file = tmp_path / "notsoslow" / "__init__.py"
     version_file.parent.mkdir()
     version_file.write_text('__version__ = "0.136.3"\n')
     release_notes_file = tmp_path / "release-notes.md"
@@ -237,7 +237,7 @@ def test_cli_updates_configured_files(tmp_path: Path) -> None:
 
 
 def test_cli_accepts_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    version_file = tmp_path / "fastapi" / "__init__.py"
+    version_file = tmp_path / "notsoslow" / "__init__.py"
     version_file.parent.mkdir()
     version_file.write_text('__version__ = "0.136.3"\n')
     release_notes_file = tmp_path / "docs" / "en" / "docs" / "release-notes.md"
@@ -257,7 +257,7 @@ def test_cli_accepts_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_cli_prints_current_version(tmp_path: Path) -> None:
-    version_file = tmp_path / "fastapi" / "__init__.py"
+    version_file = tmp_path / "notsoslow" / "__init__.py"
     version_file.parent.mkdir()
     version_file.write_text('__version__ = "0.136.3"\n')
 
@@ -275,7 +275,7 @@ def test_cli_prints_current_version(tmp_path: Path) -> None:
 
 
 def test_cli_prints_release_notes(tmp_path: Path) -> None:
-    version_file = tmp_path / "fastapi" / "__init__.py"
+    version_file = tmp_path / "notsoslow" / "__init__.py"
     version_file.parent.mkdir()
     version_file.write_text('__version__ = "0.136.4"\n')
     release_notes_file = tmp_path / "release-notes.md"

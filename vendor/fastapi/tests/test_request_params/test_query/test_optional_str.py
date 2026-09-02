@@ -1,8 +1,8 @@
 from typing import Annotated
 
 import pytest
-from fastapi import FastAPI, Query
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Query
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 from pydantic import BaseModel, Field
 

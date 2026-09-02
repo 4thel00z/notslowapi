@@ -1,6 +1,6 @@
 from dataclasses import field  # (1)
 
-from fastapi import FastAPI
+from notsoslow import FastAPI
 from pydantic.dataclasses import dataclass  # (2)
 
 

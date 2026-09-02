@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from notsoslow import FastAPI
 from pydantic.v1 import BaseModel
 
 

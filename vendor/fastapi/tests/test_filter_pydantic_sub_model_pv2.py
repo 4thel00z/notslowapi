@@ -1,8 +1,8 @@
 import pytest
 from dirty_equals import HasRepr
-from fastapi import Depends, FastAPI
-from fastapi.exceptions import ResponseValidationError
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI
+from notsoslow.exceptions import ResponseValidationError
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 

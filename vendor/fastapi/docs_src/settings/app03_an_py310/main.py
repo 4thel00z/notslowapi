@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, FastAPI
+from notsoslow import Depends, FastAPI
 
 from . import config
 

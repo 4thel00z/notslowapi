@@ -1,6 +1,6 @@
-from fastapi import FastAPI
-from fastapi.params import Param
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI
+from notsoslow.params import Param
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

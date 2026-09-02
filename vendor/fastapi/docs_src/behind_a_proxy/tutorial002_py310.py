@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from notsoslow import FastAPI, Request
 
 app = FastAPI(root_path="/api/v1")
 

@@ -1,7 +1,7 @@
 import secrets
 
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from notsoslow import Depends, FastAPI, HTTPException, status
+from notsoslow.security import HTTPBasic, HTTPBasicCredentials
 
 app = FastAPI()
 

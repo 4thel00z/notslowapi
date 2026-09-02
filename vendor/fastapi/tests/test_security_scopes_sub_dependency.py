@@ -4,9 +4,9 @@
 from typing import Annotated
 
 import pytest
-from fastapi import Depends, FastAPI, Security
-from fastapi.security import SecurityScopes
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI, Security
+from notsoslow.security import SecurityScopes
+from notsoslow.testclient import TestClient
 
 
 @pytest.fixture(name="call_counts")

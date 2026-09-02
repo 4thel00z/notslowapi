@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 from docs_src.path_params.tutorial003b_py310 import app, read_users2

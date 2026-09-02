@@ -1,4 +1,4 @@
-from fastapi.dependencies.utils import get_typed_annotation
+from notsoslow.dependencies.utils import get_typed_annotation
 
 
 def test_get_typed_annotation():

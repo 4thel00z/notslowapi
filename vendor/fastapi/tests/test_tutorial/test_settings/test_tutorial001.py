@@ -1,7 +1,7 @@
 import importlib
 
 import pytest
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from pytest import MonkeyPatch
 
 

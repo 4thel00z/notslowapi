@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import FastAPI, Header
+from notsoslow import FastAPI, Header
 
 app = FastAPI()
 

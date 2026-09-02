@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 
 from tests.utils import workdir_lock
 

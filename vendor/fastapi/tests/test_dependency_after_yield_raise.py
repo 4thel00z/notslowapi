@@ -1,8 +1,8 @@
 from typing import Annotated, Any
 
 import pytest
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI, HTTPException
+from notsoslow.testclient import TestClient
 
 
 class CustomError(Exception):

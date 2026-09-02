@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from notsoslow import APIRouter
 
 router = APIRouter()
 

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import FastAPI, Header
+from notsoslow import FastAPI, Header
 from pydantic import BaseModel
 
 app = FastAPI()

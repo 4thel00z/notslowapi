@@ -1,7 +1,7 @@
 from typing import Any
 
-from fastapi import FastAPI, Response
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Response
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 app = FastAPI()

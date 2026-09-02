@@ -3,8 +3,8 @@ from functools import partial
 from typing import Annotated
 
 import pytest
-from fastapi import Depends, FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from notsoslow import FastAPI
 
 app = FastAPI(openapi_url="/api/v1/openapi.json")
 

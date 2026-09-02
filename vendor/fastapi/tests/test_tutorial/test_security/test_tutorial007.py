@@ -2,7 +2,7 @@ import importlib
 from base64 import b64encode
 
 import pytest
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 

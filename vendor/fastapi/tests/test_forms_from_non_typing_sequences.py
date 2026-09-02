@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Form
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, Form
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

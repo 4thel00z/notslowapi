@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from notsoslow import FastAPI
+from notsoslow.responses import FileResponse
 
 some_file_path = "large-video-file.mp4"
 app = FastAPI()

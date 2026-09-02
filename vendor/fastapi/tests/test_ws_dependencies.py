@@ -1,8 +1,8 @@
 import json
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, WebSocket
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, Depends, FastAPI, WebSocket
+from notsoslow.testclient import TestClient
 
 
 def dependency_list() -> list[str]:

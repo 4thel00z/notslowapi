@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.routing import APIRoute
+from notsoslow import FastAPI
+from notsoslow.routing import APIRoute
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

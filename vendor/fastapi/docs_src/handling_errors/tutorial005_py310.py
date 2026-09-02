@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request
-from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from notsoslow import FastAPI, Request
+from notsoslow.encoders import jsonable_encoder
+from notsoslow.exceptions import RequestValidationError
+from notsoslow.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()

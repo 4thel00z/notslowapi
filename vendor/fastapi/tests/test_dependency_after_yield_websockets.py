@@ -3,8 +3,8 @@ from contextlib import contextmanager
 from typing import Annotated, Any
 
 import pytest
-from fastapi import Depends, FastAPI, WebSocket
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI, WebSocket
+from notsoslow.testclient import TestClient
 
 
 class Session:

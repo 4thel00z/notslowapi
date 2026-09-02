@@ -1,4 +1,4 @@
-from fastapi import Depends
+from notsoslow import Depends
 
 
 async def dependency_a():

@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.middleware.gzip import GZipMiddleware
+from notsoslow import FastAPI
+from notsoslow.middleware.gzip import GZipMiddleware
 
 app = FastAPI()
 

@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 
 from docs_src.behind_a_proxy.tutorial001_01_py310 import app
 

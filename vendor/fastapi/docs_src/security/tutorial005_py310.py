@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, Security, status
-from fastapi.security import (
+from notsoslow import Depends, FastAPI, HTTPException, Security, status
+from notsoslow.security import (
     OAuth2PasswordBearer,
     OAuth2PasswordRequestForm,
     SecurityScopes,

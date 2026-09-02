@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

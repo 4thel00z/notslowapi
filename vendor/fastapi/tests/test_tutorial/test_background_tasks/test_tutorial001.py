@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 
 from docs_src.background_tasks.tutorial001_py310 import app
 from tests.utils import workdir_lock

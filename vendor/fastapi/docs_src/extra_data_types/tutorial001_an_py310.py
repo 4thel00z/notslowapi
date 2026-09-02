@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Body, FastAPI
+from notsoslow import Body, FastAPI
 
 app = FastAPI()
 

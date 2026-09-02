@@ -1,4 +1,4 @@
-from fastapi import Cookie, FastAPI
+from notsoslow import Cookie, FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()

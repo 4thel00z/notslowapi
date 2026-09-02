@@ -4,7 +4,7 @@ import sys
 from unittest import mock
 
 import pytest
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 MOD_NAME = "docs_src.debugging.tutorial001_py310"

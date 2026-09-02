@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.openapi.utils import get_openapi
+from notsoslow import FastAPI
+from notsoslow.openapi.utils import get_openapi
 
 app = FastAPI()
 

@@ -1,8 +1,8 @@
 from collections.abc import Callable
 
-from fastapi import Body, FastAPI, HTTPException, Request, Response
-from fastapi.exceptions import RequestValidationError
-from fastapi.routing import APIRoute
+from notsoslow import Body, FastAPI, HTTPException, Request, Response
+from notsoslow.exceptions import RequestValidationError
+from notsoslow.routing import APIRoute
 
 
 class ValidationErrorLoggingRoute(APIRoute):

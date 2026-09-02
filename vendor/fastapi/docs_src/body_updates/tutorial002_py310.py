@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.encoders import jsonable_encoder
+from notsoslow import FastAPI
+from notsoslow.encoders import jsonable_encoder
 from pydantic import BaseModel
 
 app = FastAPI()

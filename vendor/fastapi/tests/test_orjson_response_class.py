@@ -4,10 +4,10 @@ import pytest
 
 pytest.importorskip("orjson")
 
-from fastapi import FastAPI
-from fastapi.exceptions import FastAPIDeprecationWarning
-from fastapi.responses import ORJSONResponse  # ty: ignore[deprecated]
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI
+from notsoslow.exceptions import FastAPIDeprecationWarning
+from notsoslow.responses import ORJSONResponse  # ty: ignore[deprecated]
+from notsoslow.testclient import TestClient
 from sqlalchemy.sql.elements import quoted_name
 
 with warnings.catch_warnings():

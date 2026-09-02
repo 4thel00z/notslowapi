@@ -1,6 +1,6 @@
 import anyio
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from notsoslow import FastAPI
+from notsoslow.responses import StreamingResponse
 
 app = FastAPI()
 

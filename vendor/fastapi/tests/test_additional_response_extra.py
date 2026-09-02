@@ -1,5 +1,5 @@
-from fastapi import APIRouter, FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, FastAPI
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 router = APIRouter()

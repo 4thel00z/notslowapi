@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from notsoslow import FastAPI
+from notsoslow.responses import HTMLResponse
 
 app = FastAPI()
 

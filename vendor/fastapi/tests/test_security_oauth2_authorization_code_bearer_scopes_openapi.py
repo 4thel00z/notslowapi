@@ -2,9 +2,9 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, Security
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, Depends, FastAPI, Security
+from notsoslow.security import OAuth2AuthorizationCodeBearer
+from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(

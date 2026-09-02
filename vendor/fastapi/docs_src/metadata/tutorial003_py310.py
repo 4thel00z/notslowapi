@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from notsoslow import FastAPI
 
 app = FastAPI(docs_url="/documentation", redoc_url=None)
 

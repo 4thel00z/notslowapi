@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterable, Iterable
 
-from fastapi import FastAPI
+from notsoslow import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()

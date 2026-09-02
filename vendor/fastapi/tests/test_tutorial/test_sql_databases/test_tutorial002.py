@@ -4,7 +4,7 @@ from typing import Any, cast
 
 import pytest
 from dirty_equals import IsInt
-from fastapi.testclient import TestClient
+from notsoslow.testclient import TestClient
 from inline_snapshot import Is, snapshot
 from sqlalchemy import StaticPool
 from sqlmodel import SQLModel, create_engine

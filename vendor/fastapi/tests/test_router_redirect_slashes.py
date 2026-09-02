@@ -1,5 +1,5 @@
-from fastapi import APIRouter, FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import APIRouter, FastAPI
+from notsoslow.testclient import TestClient
 
 
 def test_redirect_slashes_enabled():

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import (
+from notsoslow import (
     Cookie,
     Depends,
     FastAPI,
@@ -9,7 +9,7 @@ from fastapi import (
     WebSocketException,
     status,
 )
-from fastapi.responses import HTMLResponse
+from notsoslow.responses import HTMLResponse
 
 app = FastAPI()
 

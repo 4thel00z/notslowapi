@@ -1,5 +1,5 @@
-from fastapi import Depends, FastAPI, Security
-from fastapi.testclient import TestClient
+from notsoslow import Depends, FastAPI, Security
+from notsoslow.testclient import TestClient
 
 app = FastAPI()
 

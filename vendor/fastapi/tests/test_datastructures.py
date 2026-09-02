@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from fastapi import FastAPI, UploadFile
-from fastapi.datastructures import Default, DefaultPlaceholder
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI, UploadFile
+from notsoslow.datastructures import Default, DefaultPlaceholder
+from notsoslow.testclient import TestClient
 
 
 def test_upload_file_invalid_pydantic_v2():

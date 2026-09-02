@@ -1,4 +1,4 @@
-from fastapi import APIRouter, FastAPI
+from notsoslow import APIRouter, FastAPI
 from pydantic import BaseModel, HttpUrl
 
 app = FastAPI()

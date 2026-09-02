@@ -1,7 +1,7 @@
 import http
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from notsoslow import FastAPI
+from notsoslow.testclient import TestClient
 
 
 def test_no_content():

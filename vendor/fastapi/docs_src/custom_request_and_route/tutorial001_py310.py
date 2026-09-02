@@ -1,8 +1,8 @@
 import gzip
 from collections.abc import Callable
 
-from fastapi import Body, FastAPI, Request, Response
-from fastapi.routing import APIRoute
+from notsoslow import Body, FastAPI, Request, Response
+from notsoslow.routing import APIRoute
 
 
 class GzipRequest(Request):
