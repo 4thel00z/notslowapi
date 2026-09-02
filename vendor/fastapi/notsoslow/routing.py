@@ -993,6 +993,7 @@ _FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY = "effective_route_context"
 _FASTAPI_FRONTEND_PATH_KEY = "frontend_path"
 _FASTAPI_FRONTEND_SPECIFICITY_KEY = "frontend_specificity"
 _FASTAPI_INCLUDED_ROUTER_KEY = "included_router"
+_FASTAPI_SELECTIONS_KEY = "selections"
 _effective_route_context_var: ContextVar[Any | None] = ContextVar(
     "fastapi_effective_route_context", default=None
 )
@@ -1694,12 +1695,17 @@ class _EffectiveRouteContext:
         if scope["type"] != "http":
             return Match.NONE, {}
         route_path = get_route_path(scope)
-        match = self.path_regex.match(route_path)
-        if not match:
-            return Match.NONE, {}
-        matched_params = match.groupdict()
-        for key, value in matched_params.items():
-            matched_params[key] = self.param_convertors[key].convert(value)
+        if not self.param_convertors:
+            if route_path != self.path:
+                return Match.NONE, {}
+            matched_params: dict[str, Any] = {}
+        else:
+            match = self.path_regex.match(route_path)
+            if not match:
+                return Match.NONE, {}
+            matched_params = match.groupdict()
+            for key, value in matched_params.items():
+                matched_params[key] = self.param_convertors[key].convert(value)
         path_params = dict(scope.get("path_params", {}))
         path_params.update(matched_params)
         child_scope = {"endpoint": self.endpoint, "path_params": path_params}
@@ -1780,6 +1786,18 @@ class _IncludedRouter(BaseRoute):
         default_factory=list
     )
     _effective_low_priority_routes_version: int | None = None
+    effective_index: dict[str, list["_EffectiveRouteContext | _IncludedRouter"]] = (
+        field(default_factory=dict)
+    )
+    effective_rest: list["_EffectiveRouteContext | _IncludedRouter"] = field(
+        default_factory=list
+    )
+
+    def candidates_for(
+        self, route_path: str
+    ) -> list["_EffectiveRouteContext | _IncludedRouter"]:
+        self.effective_candidates()
+        return self.effective_index.get(route_path, self.effective_rest)
 
     def effective_candidates(self) -> list["_EffectiveRouteContext | _IncludedRouter"]:
         routes_version = self.original_router._get_routes_version()
@@ -1802,6 +1820,9 @@ class _IncludedRouter(BaseRoute):
                 route_context = self._build_effective_context(route)
                 if route_context is not None:
                     effective_candidates.append(route_context)
+            self.effective_index, self.effective_rest = build_effective_index(
+                effective_candidates
+            )
             self._effective_candidates = effective_candidates
             self._effective_candidates_version = routes_version
             return effective_candidates
@@ -1912,7 +1933,7 @@ class _IncludedRouter(BaseRoute):
         self, scope: Scope
     ) -> tuple[Match, Scope, BaseRoute | None, _EffectiveRouteContext | None]:
         partial: tuple[Scope, BaseRoute, _EffectiveRouteContext | None] | None = None
-        for candidate in self.effective_candidates():
+        for candidate in self.candidates_for(get_route_path(scope)):
             if isinstance(candidate, _IncludedRouter):
                 match, child_scope = candidate.matches(scope)
                 route: BaseRoute = candidate
@@ -1965,7 +1986,11 @@ class _IncludedRouter(BaseRoute):
     async def _handle_selected(
         self, scope: Scope, receive: Receive, send: Send
     ) -> None:
-        match, child_scope, route, effective_context = self._match(scope)
+        selections = _get_fastapi_scope(scope).get(_FASTAPI_SELECTIONS_KEY)
+        selection = selections.pop(id(self), None) if selections else None
+        if selection is None:
+            selection = self._match(scope)
+        match, child_scope, route, effective_context = selection
         if match == Match.NONE or route is None:
             await self.original_router.default(scope, receive, send)
             return
@@ -1998,6 +2023,40 @@ class _IncludedRouter(BaseRoute):
             except routing.NoMatchFound:
                 pass
         raise routing.NoMatchFound(name, path_params)
+
+
+def build_effective_index(
+    candidates: Sequence["_EffectiveRouteContext | _IncludedRouter"],
+) -> tuple[
+    dict[str, list["_EffectiveRouteContext | _IncludedRouter"]],
+    list["_EffectiveRouteContext | _IncludedRouter"],
+]:
+    def static_path(
+        candidate: "_EffectiveRouteContext | _IncludedRouter",
+    ) -> str | None:
+        if not isinstance(candidate, _EffectiveRouteContext):
+            return None
+        if not isinstance(candidate.original_route, APIRoute):
+            return None
+        if candidate.param_convertors:
+            return None
+        return candidate.path
+
+    index: dict[str, list[_EffectiveRouteContext | _IncludedRouter]] = {}
+    rest: list[_EffectiveRouteContext | _IncludedRouter] = []
+    for candidate in candidates:
+        path = static_path(candidate)
+        if path is not None:
+            index.setdefault(path, [])
+    for candidate in candidates:
+        path = static_path(candidate)
+        if path is not None:
+            index[path].append(candidate)
+            continue
+        rest.append(candidate)
+        for group in index.values():
+            group.append(candidate)
+    return index, rest
 
 
 def _iter_included_route_candidates(routes: Sequence[BaseRoute]) -> Iterator[BaseRoute]:
@@ -2979,8 +3038,12 @@ class APIRouter(routing.Router):
             isinstance(included_router, _IncludedRouter)
             and included_router.original_router is self
         ):
-            match, child_scope, _, _ = included_router._match(scope)
-            return match, child_scope
+            selection = included_router._match(scope)
+            if selection[0] != Match.NONE:
+                fastapi_scope = _get_fastapi_scope(scope)
+                selections = fastapi_scope.setdefault(_FASTAPI_SELECTIONS_KEY, {})
+                selections[id(included_router)] = selection
+            return selection[0], selection[1]
         return Match.NONE, {}
 
     def _iter_low_priority_routes(

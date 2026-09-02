@@ -121,6 +121,27 @@ def many_routes_fastapi() -> FastAPI:
 
 l5_fastapi_50routes = many_routes_fastapi()
 
+
+def many_routes_fastapi_included() -> FastAPI:
+    router = APIRouter()
+
+    async def param_endpoint(item_id: int) -> dict[str, Any]:
+        return {"id": item_id}
+
+    async def static_endpoint() -> dict[str, Any]:
+        return PAYLOAD
+
+    for i in range(10):
+        router.add_api_route(f"/p{i}/{{item_id}}", param_endpoint)
+    for i in range(40):
+        router.add_api_route(f"/r{i}", static_endpoint)
+    app = FastAPI()
+    app.include_router(router)
+    return app
+
+
+l5b_fastapi_50routes_included = many_routes_fastapi_included()
+
 l3_fastapi_params = FastAPI()
 
 
@@ -180,6 +201,7 @@ RUNGS: dict[str, ASGIApp] = {
     "l2c_fastapi_included": l2c_fastapi_included,
     "l1c_starlette_50routes": l1c_starlette_50routes,
     "l5_fastapi_50routes": l5_fastapi_50routes,
+    "l5b_fastapi_50routes_included": l5b_fastapi_50routes_included,
     "l3_fastapi_params": l3_fastapi_params,
     "l4_fastapi_model": l4_fastapi_model,
 }
