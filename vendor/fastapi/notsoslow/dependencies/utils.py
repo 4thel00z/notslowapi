@@ -578,7 +578,7 @@ class SolvedDependency:
     values: dict[str, Any]
     errors: list[Any]
     background_tasks: StarletteBackgroundTasks | None
-    response: Response
+    response: Response | None
     dependency_cache: dict[DependencyCacheKey, Any]
 
 
@@ -607,7 +607,7 @@ async def solve_dependencies(
     )
     values: dict[str, Any] = {}
     errors: list[Any] = []
-    if response is None:
+    if response is None and (dependant.dependencies or dependant.response_param_name):
         response = Response()
         del response.headers["content-length"]
         response.status_code = None  # type: ignore
@@ -677,23 +677,30 @@ async def solve_dependencies(
             values[sub_dependant.name] = solved
         if sub_dependant_cache_key not in dependency_cache:
             dependency_cache[sub_dependant_cache_key] = solved
-    path_values, path_errors = request_params_to_args(
-        dependant.path_params, request.path_params
-    )
-    query_values, query_errors = request_params_to_args(
-        dependant.query_params, request.query_params
-    )
-    header_values, header_errors = request_params_to_args(
-        dependant.header_params, request.headers
-    )
-    cookie_values, cookie_errors = request_params_to_args(
-        dependant.cookie_params, request.cookies
-    )
-    values.update(path_values)
-    values.update(query_values)
-    values.update(header_values)
-    values.update(cookie_values)
-    errors += path_errors + query_errors + header_errors + cookie_errors
+    if dependant.path_params:
+        path_values, path_errors = request_params_to_args(
+            dependant.path_params, request.path_params
+        )
+        values.update(path_values)
+        errors.extend(path_errors)
+    if dependant.query_params:
+        query_values, query_errors = request_params_to_args(
+            dependant.query_params, request.query_params
+        )
+        values.update(query_values)
+        errors.extend(query_errors)
+    if dependant.header_params:
+        header_values, header_errors = request_params_to_args(
+            dependant.header_params, request.headers
+        )
+        values.update(header_values)
+        errors.extend(header_errors)
+    if dependant.cookie_params:
+        cookie_values, cookie_errors = request_params_to_args(
+            dependant.cookie_params, request.cookies
+        )
+        values.update(cookie_values)
+        errors.extend(cookie_errors)
     if dependant.body_params:
         (
             body_values,

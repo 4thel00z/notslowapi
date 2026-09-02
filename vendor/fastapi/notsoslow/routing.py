@@ -354,21 +354,30 @@ async def run_endpoint_function(
         return await run_in_threadpool(dependant.call, **values)
 
 
+def merge_dependency_headers(
+    response: Response, dependency_response: Response | None
+) -> None:
+    if not dependency_response:
+        return
+    response.headers.raw.extend(dependency_response.headers.raw)
+
+
 def _build_response_args(
     *, status_code: int | None, solved_result: Any
 ) -> dict[str, Any]:
     response_args: dict[str, Any] = {
         "background": solved_result.background_tasks,
     }
+    dependency_status_code = (
+        solved_result.response.status_code if solved_result.response else None
+    )
     # If status_code was set, use it, otherwise use the default from the
     # response class, in the case of redirect it's 307
-    current_status_code = (
-        status_code if status_code else solved_result.response.status_code
-    )
+    current_status_code = status_code if status_code else dependency_status_code
     if current_status_code is not None:
         response_args["status_code"] = current_status_code
-    if solved_result.response.status_code:
-        response_args["status_code"] = solved_result.response.status_code
+    if dependency_status_code:
+        response_args["status_code"] = dependency_status_code
     return response_args
 
 
@@ -643,7 +652,7 @@ def get_request_handler(
                 response.headers["Cache-Control"] = "no-cache"
                 # For Nginx proxies to not buffer server sent events
                 response.headers["X-Accel-Buffering"] = "no"
-                response.headers.raw.extend(solved_result.response.headers.raw)
+                merge_dependency_headers(response, solved_result.response)
             elif is_json_stream:
                 # Generator endpoint: stream as JSONL
                 gen = dependant.call(**solved_result.values)
@@ -679,7 +688,7 @@ def get_request_handler(
                     media_type="application/jsonl",
                     **response_args,
                 )
-                response.headers.raw.extend(solved_result.response.headers.raw)
+                merge_dependency_headers(response, solved_result.response)
             elif _is_async_gen_callable(dependant.call) or _is_gen_callable(
                 dependant.call
             ):
@@ -701,7 +710,7 @@ def get_request_handler(
                     status_code=status_code, solved_result=solved_result
                 )
                 response = actual_response_class(content=gen, **response_args)
-                response.headers.raw.extend(solved_result.response.headers.raw)
+                merge_dependency_headers(response, solved_result.response)
             else:
                 raw_response = await run_endpoint_function(
                     dependant=dependant,
@@ -747,7 +756,7 @@ def get_request_handler(
                         response = actual_response_class(content, **response_args)
                     if not is_body_allowed_for_status_code(response.status_code):
                         response.body = b""
-                    response.headers.raw.extend(solved_result.response.headers.raw)
+                    merge_dependency_headers(response, solved_result.response)
         if errors:
             validation_error = RequestValidationError(
                 errors, body=body, endpoint_ctx=endpoint_ctx
@@ -2201,7 +2210,7 @@ class _FrontendRouteGroup(BaseRoute):
                 response = await route.app.get_response_for_scope(scope)
                 if response.background is None:
                     response.background = solved_result.background_tasks
-                response.headers.raw.extend(solved_result.response.headers.raw)
+                merge_dependency_headers(response, solved_result.response)
                 await response(scope, receive, send)
             return
         await route.handle(scope, receive, send)
