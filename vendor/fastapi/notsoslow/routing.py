@@ -593,7 +593,6 @@ def get_request_handler(
 
     async def app(request: Request) -> Response:
         response: Response | None = None
-        endpoint_ctx = endpoint_context(request)
 
         # Read body and auto-close files
         try:
@@ -633,7 +632,7 @@ def get_request_handler(
                     }
                 ],
                 body=e.doc,
-                endpoint_ctx=endpoint_ctx,
+                endpoint_ctx=endpoint_context(request),
             )
             raise validation_error from e
         except HTTPException:
@@ -668,11 +667,10 @@ def get_request_handler(
                         data, {}, loc=("response",)
                     )
                     if errors_:
-                        ctx = endpoint_ctx or EndpointContext()
                         raise ResponseValidationError(
                             errors=errors_,
                             body=data,
-                            endpoint_ctx=ctx,
+                            endpoint_ctx=endpoint_context(request),
                         )
                     return stream_item_field.serialize_json(
                         value,
@@ -895,13 +893,15 @@ def get_request_handler(
                         exclude_defaults=response_model_exclude_defaults,
                         exclude_none=response_model_exclude_none,
                         is_coroutine=is_coroutine,
-                        endpoint_ctx=endpoint_ctx,
+                        endpoint_ctx_factory=functools.partial(
+                            endpoint_context, request
+                        ),
                         dump_json=use_dump_json,
                     )
                     response = build_response(content, solved_result)
         if errors:
             validation_error = RequestValidationError(
-                errors, body=body, endpoint_ctx=endpoint_ctx
+                errors, body=body, endpoint_ctx=endpoint_context(request)
             )
             raise validation_error
 

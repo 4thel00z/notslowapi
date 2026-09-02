@@ -252,11 +252,23 @@ class Request(HTTPConnection[StateT]):
         yield b""
 
     async def body(self) -> bytes:
-        if not hasattr(self, "_body"):
-            chunks: list[bytes] = []
-            async for chunk in self.stream():
-                chunks.append(chunk)
-            self._body = b"".join(chunks)
+        if hasattr(self, "_body"):
+            return self._body
+        if self._stream_consumed:
+            raise RuntimeError("Stream consumed")
+        chunks: list[bytes] = []
+        while not self._stream_consumed:
+            message = await self._receive()
+            if message["type"] == "http.request":
+                body = message.get("body", b"")
+                if not message.get("more_body", False):
+                    self._stream_consumed = True
+                if body:
+                    chunks.append(body)
+            elif message["type"] == "http.disconnect":  # pragma: no branch
+                self._is_disconnected = True
+                raise ClientDisconnect()
+        self._body = chunks[0] if len(chunks) == 1 else b"".join(chunks)
         return self._body
 
     async def json(self) -> Any:
