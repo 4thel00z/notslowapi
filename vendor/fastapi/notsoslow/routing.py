@@ -90,7 +90,13 @@ from notsoslow.utils import (
     is_body_allowed_for_status_code,
 )
 from starlette import routing
-from starlette._exception_handler import run_handling_exceptions
+from starlette._exception_handler import (
+    RESPONSE_STARTED_KEY,
+    find_exception_handler,
+    run_handling_exceptions,
+    send_handler_response,
+    tracking_sender,
+)
 from starlette._utils import get_route_path, is_async_callable
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from starlette.datastructures import URL, FormData, URLPath
@@ -210,6 +216,49 @@ def request_response(
         await run_handling_exceptions(app, request, scope, receive, send)
 
     return app
+
+
+def trivial_request_response(
+    handler: Callable[[Request], Awaitable[Response]],
+) -> ASGIApp:
+    """request_response for routes that never need exit stacks: one frame from scope to handler."""
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        request = Request(scope, receive, send)
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        try:
+            response = await handler(request)
+            await response(scope, receive, sender)
+        except Exception as exc:
+            exception_handler = find_exception_handler(exc, scope)
+            if exception_handler is None:
+                raise exc
+            if tracker[0]:
+                raise RuntimeError(
+                    "Caught handled exception, but response already started."
+                ) from exc
+            await send_handler_response(
+                exception_handler, exc, request, scope, receive, sender
+            )
+
+    return app
+
+
+def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGIApp:
+    """The ASGI app for a route: the one-frame variant when no exit stack can ever be needed.
+
+    Without sub-dependencies nothing can be overridden into a dependency with yield, so the
+    build-time uses_exit_stacks decision is final.
+    """
+    if not route.uses_exit_stacks and not route.dependant.dependencies:
+        return trivial_request_response(handler)
+    return request_response(handler, needs_exit_stacks=route.needs_exit_stacks)
 
 
 # Copy of starlette.routing.websocket_session modified to include the
@@ -1468,9 +1517,7 @@ class APIRoute(routing.Route):
             generate_unique_id_function=generate_unique_id_function,
             strict_content_type=strict_content_type,
         )
-        self.app = request_response(
-            self.get_route_handler(), needs_exit_stacks=self.needs_exit_stacks
-        )
+        self.app = route_app(cast(_APIRouteLike, self), self.get_route_handler())
 
     def needs_exit_stacks(self) -> bool:
         return exit_stacks_required(
@@ -1530,9 +1577,9 @@ class APIRoute(routing.Route):
             if app is None:
                 token = _effective_route_context_var.set(effective_context)
                 try:
-                    app = request_response(
+                    app = route_app(
+                        cast(_APIRouteLike, effective_context),
                         self.get_route_handler(),
-                        needs_exit_stacks=effective_context.needs_exit_stacks,
                     )
                 finally:
                     _effective_route_context_var.reset(token)
