@@ -13,6 +13,7 @@ from notsoslow.exception_handlers import (
 )
 from notsoslow.exceptions import RequestValidationError, WebSocketRequestValidationError
 from notsoslow.logger import logger
+from notsoslow.middleware.exceptions import ExceptionHandlingMiddleware
 from notsoslow.openapi.docs import (
     get_redoc_html,
     get_swagger_ui_html,
@@ -1028,6 +1029,14 @@ class FastAPI(Starlette):
                 error_handler = value
             else:
                 exception_handlers[key] = value
+
+        if not self.user_middleware:
+            return ExceptionHandlingMiddleware(
+                self.router,
+                error_handler=error_handler,
+                exception_handlers=exception_handlers,
+                debug=debug,
+            )
 
         middleware = (
             [Middleware(ServerErrorMiddleware, handler=error_handler, debug=debug)]
