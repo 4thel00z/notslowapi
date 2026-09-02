@@ -7,11 +7,11 @@ import re
 import traceback
 import types
 import warnings
-from collections.abc import Awaitable, Callable, Collection, Generator, Sequence
+from collections.abc import Awaitable, Callable, Collection, Generator, Iterable, Sequence
 from contextlib import AbstractAsyncContextManager, AbstractContextManager, asynccontextmanager
 from enum import Enum
 from re import Pattern
-from typing import Any, TypeVar
+from typing import Any, SupportsIndex, TypeVar
 
 from starlette._exception_handler import wrap_app_handling_exceptions
 from starlette._utils import get_route_path, is_async_callable, parse_host_header
@@ -580,6 +580,79 @@ class _DefaultLifespan:
         return self
 
 
+class RouteList(list[BaseRoute]):
+    """Route list that counts its own mutations so a router can cache indexes built from it."""
+
+    def __init__(self, routes: Iterable[BaseRoute] = ()) -> None:
+        super().__init__(routes)
+        self.version = 0
+
+    def append(self, route: BaseRoute) -> None:
+        super().append(route)
+        self.version += 1
+
+    def extend(self, routes: Iterable[BaseRoute]) -> None:
+        super().extend(routes)
+        self.version += 1
+
+    def insert(self, index: SupportsIndex, route: BaseRoute) -> None:
+        super().insert(index, route)
+        self.version += 1
+
+    def remove(self, route: BaseRoute) -> None:
+        super().remove(route)
+        self.version += 1
+
+    def pop(self, index: SupportsIndex = -1) -> BaseRoute:
+        route = super().pop(index)
+        self.version += 1
+        return route
+
+    def clear(self) -> None:
+        super().clear()
+        self.version += 1
+
+    def sort(self, *args: Any, **kwargs: Any) -> None:
+        super().sort(*args, **kwargs)
+        self.version += 1
+
+    def reverse(self) -> None:
+        super().reverse()
+        self.version += 1
+
+    def __setitem__(self, index: Any, route: Any) -> None:
+        super().__setitem__(index, route)
+        self.version += 1
+
+    def __delitem__(self, index: SupportsIndex | slice) -> None:
+        super().__delitem__(index)
+        self.version += 1
+
+    def __iadd__(self, routes: Iterable[BaseRoute]) -> RouteList:  # type: ignore[override,misc]
+        super().__iadd__(routes)
+        self.version += 1
+        return self
+
+
+def build_route_index(
+    routes: Sequence[BaseRoute],
+) -> tuple[dict[str, list[BaseRoute]], list[BaseRoute]]:
+    """Group routes by static path; every non-static route is a candidate for every path."""
+    index: dict[str, list[BaseRoute]] = {}
+    rest: list[BaseRoute] = []
+    for route in routes:
+        if isinstance(route, Route) and not route.param_convertors:
+            index.setdefault(route.path, [])
+    for route in routes:
+        if isinstance(route, Route) and not route.param_convertors:
+            index[route.path].append(route)
+            continue
+        rest.append(route)
+        for candidates in index.values():
+            candidates.append(route)
+    return index, rest
+
+
 class Router:
     def __init__(
         self,
@@ -593,7 +666,10 @@ class Router:
         middleware: Sequence[Middleware] | None = None,
         max_body_size: int | None = None,
     ) -> None:
-        self.routes = [] if routes is None else list(routes)
+        self.routes: list[BaseRoute] = RouteList(() if routes is None else routes)
+        self.route_index_version = -1
+        self.route_index: dict[str, list[BaseRoute]] = {}
+        self.route_index_rest: list[BaseRoute] = []
         self.redirect_slashes = redirect_slashes
         self.default = self.not_found if default is None else default
 
@@ -622,6 +698,15 @@ class Router:
                 self.middleware_stack = cls(self.middleware_stack, *args, **kwargs)
         if max_body_size is not None:
             self.middleware_stack = RequestBodyLimitMiddleware(self.middleware_stack, max_body_size=max_body_size)
+
+    def candidate_routes(self, route_path: str) -> list[BaseRoute]:
+        routes = self.routes
+        if not isinstance(routes, RouteList):
+            return routes
+        if routes.version != self.route_index_version:
+            self.route_index, self.route_index_rest = build_route_index(routes)
+            self.route_index_version = routes.version
+        return self.route_index.get(route_path, self.route_index_rest)
 
     async def not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "websocket":
@@ -690,8 +775,9 @@ class Router:
             return
 
         partial = None
+        route_path = get_route_path(scope)
 
-        for route in self.routes:
+        for route in self.candidate_routes(route_path):
             # Determine if any route matches the incoming scope,
             # and hand over to the matching route if found.
             match, child_scope = route.matches(scope)
@@ -713,7 +799,6 @@ class Router:
             await partial.handle(scope, receive, send)
             return
 
-        route_path = get_route_path(scope)
         if scope["type"] == "http" and self.redirect_slashes and route_path != "/":
             redirect_scope = dict(scope)
             if route_path.endswith("/"):

@@ -91,6 +91,36 @@ async def fastapi_included() -> dict[str, Any]:
 
 l2c_fastapi_included.include_router(included_router)
 
+def many_routes_starlette() -> Starlette:
+    async def param_endpoint(request: Request) -> JSONResponse:
+        return JSONResponse({"id": request.path_params["item_id"]})
+
+    routes = [Route(f"/p{i}/{{item_id}}", param_endpoint) for i in range(10)]
+    routes += [Route(f"/r{i}", starlette_endpoint) for i in range(40)]
+    return Starlette(routes=routes)
+
+
+l1c_starlette_50routes = many_routes_starlette()
+
+
+def many_routes_fastapi() -> FastAPI:
+    app = FastAPI()
+
+    async def param_endpoint(item_id: int) -> dict[str, Any]:
+        return {"id": item_id}
+
+    async def static_endpoint() -> dict[str, Any]:
+        return PAYLOAD
+
+    for i in range(10):
+        app.add_api_route(f"/p{i}/{{item_id}}", param_endpoint)
+    for i in range(40):
+        app.add_api_route(f"/r{i}", static_endpoint)
+    return app
+
+
+l5_fastapi_50routes = many_routes_fastapi()
+
 l3_fastapi_params = FastAPI()
 
 
@@ -148,6 +178,8 @@ RUNGS: dict[str, ASGIApp] = {
     "l2_fastapi_dict": l2_fastapi_dict,
     "l2b_fastapi_untyped": l2b_fastapi_untyped,
     "l2c_fastapi_included": l2c_fastapi_included,
+    "l1c_starlette_50routes": l1c_starlette_50routes,
+    "l5_fastapi_50routes": l5_fastapi_50routes,
     "l3_fastapi_params": l3_fastapi_params,
     "l4_fastapi_model": l4_fastapi_model,
 }

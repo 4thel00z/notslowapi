@@ -2910,7 +2910,8 @@ class APIRouter(routing.Router):
             return
 
         partial: tuple[BaseRoute, Scope] | None = None
-        for route in self.routes:
+        route_path = get_route_path(scope)
+        for route in self.candidate_routes(route_path):
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
                 scope.update(child_scope)
@@ -2925,7 +2926,6 @@ class APIRouter(routing.Router):
             await route.handle(scope, receive, send)
             return
 
-        route_path = get_route_path(scope)
         if scope["type"] == "http" and self.redirect_slashes and route_path != "/":
             redirect_scope = dict(scope)
             if route_path.endswith("/"):
