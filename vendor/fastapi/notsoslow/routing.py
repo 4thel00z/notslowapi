@@ -119,6 +119,12 @@ from typing_extensions import deprecated
 
 # Copy of starlette.routing.request_response modified to include the
 # dependencies' AsyncExitStack
+def exit_stacks_required(uses_exit_stacks: bool, provider: Any | None) -> bool:
+    if uses_exit_stacks:
+        return True
+    return bool(getattr(provider, "dependency_overrides", None))
+
+
 def request_response(
     func: Callable[[Request], Awaitable[Response] | Response],
     *,
@@ -1246,10 +1252,9 @@ class APIRoute(routing.Route):
         )
 
     def needs_exit_stacks(self) -> bool:
-        if self.uses_exit_stacks:
-            return True
-        provider = self.dependency_overrides_provider
-        return bool(getattr(provider, "dependency_overrides", None))
+        return exit_stacks_required(
+            self.uses_exit_stacks, self.dependency_overrides_provider
+        )
 
     def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
         route = cast(_APIRouteLike, self)
@@ -1300,11 +1305,17 @@ class APIRoute(routing.Route):
                 )
                 await response(scope, receive, send)
                 return
-            token = _effective_route_context_var.set(effective_context)
-            try:
-                app = request_response(self.get_route_handler())
-            finally:
-                _effective_route_context_var.reset(token)
+            app = effective_context.app
+            if app is None:
+                token = _effective_route_context_var.set(effective_context)
+                try:
+                    app = request_response(
+                        self.get_route_handler(),
+                        needs_exit_stacks=effective_context.needs_exit_stacks,
+                    )
+                finally:
+                    _effective_route_context_var.reset(token)
+                effective_context.app = app
             await app(scope, receive, send)
             return
         await super().handle(scope, receive, send)
@@ -1450,6 +1461,13 @@ class _EffectiveRouteContext:
     body_field: ModelField | None = None
     is_sse_stream: bool = False
     is_json_stream: bool = False
+    uses_exit_stacks: bool = False
+    app: ASGIApp | None = field(default=None, compare=False, repr=False)
+
+    def needs_exit_stacks(self) -> bool:
+        return exit_stacks_required(
+            self.uses_exit_stacks, self.dependency_overrides_provider
+        )
 
     @classmethod
     def from_api_route(
