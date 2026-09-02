@@ -55,6 +55,7 @@ LADDER: list[Rung] = [
     Rung("l1b_starlette_params", f"{BASE}/items/42?q=hello"),
     Rung("l2_fastapi_dict", f"{BASE}/"),
     Rung("l2b_fastapi_untyped", f"{BASE}/"),
+    Rung("l2c_fastapi_included", f"{BASE}/"),
     Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello"),
     Rung(
         "l4_fastapi_model",

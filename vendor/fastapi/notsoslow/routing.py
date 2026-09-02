@@ -60,6 +60,7 @@ from notsoslow.dependencies.utils import (
     _get_body_field,
     _get_flat_body_params,
     _should_embed_body_fields,
+    dependant_has_generator_dependencies,
     get_dependant,
     get_parameterless_sub_dependant,
     get_stream_item_type,
@@ -120,6 +121,8 @@ from typing_extensions import deprecated
 # dependencies' AsyncExitStack
 def request_response(
     func: Callable[[Request], Awaitable[Response] | Response],
+    *,
+    needs_exit_stacks: Callable[[], bool] | None = None,
 ) -> ASGIApp:
     """
     Takes a function or coroutine `func(request) -> response`,
@@ -135,6 +138,10 @@ def request_response(
         request = Request(scope, receive, send)
 
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            if needs_exit_stacks is not None and not needs_exit_stacks():
+                response = await f(request)
+                await response(scope, receive, send)
+                return
             # Starts customization
             response_awaited = False
             async with AsyncExitStack() as request_stack:
@@ -484,9 +491,6 @@ def get_request_handler(
         # Solve dependencies and run path operation function, auto-closing dependencies
         errors: list[Any] = []
         async_exit_stack = request.scope.get("fastapi_inner_astack")
-        assert isinstance(async_exit_stack, AsyncExitStack), (
-            "fastapi_inner_astack not found in request scope"
-        )
         solved_result = await solve_dependencies(
             request=request,
             dependant=dependant,
@@ -620,6 +624,10 @@ def get_request_handler(
                 # exit stack. The stack outlives the streaming response,
                 # so __aexit__ runs via proper structured teardown, not
                 # via GeneratorExit thrown into an async generator.
+                if not isinstance(async_exit_stack, AsyncExitStack):
+                    raise RuntimeError(
+                        "SSE endpoint needs an exit stack in the request scope"
+                    )
                 sse_receive_stream = await async_exit_stack.enter_async_context(
                     _sse_producer_cm()
                 )
@@ -965,6 +973,7 @@ class _APIRouteLike(Protocol):
     body_field: ModelField | None
     is_sse_stream: bool
     is_json_stream: bool
+    uses_exit_stacks: bool
 
 
 def _populate_api_route_state(
@@ -1086,6 +1095,9 @@ def _populate_api_route_state(
     )
     route.is_json_stream = is_generator and isinstance(
         response_class, DefaultPlaceholder
+    )
+    route.uses_exit_stacks = (
+        route.is_sse_stream or dependant_has_generator_dependencies(route.dependant)
     )
     if isinstance(response_model, DefaultPlaceholder):
         return_annotation = get_typed_return_annotation(endpoint)
@@ -1229,7 +1241,15 @@ class APIRoute(routing.Route):
             generate_unique_id_function=generate_unique_id_function,
             strict_content_type=strict_content_type,
         )
-        self.app = request_response(self.get_route_handler())
+        self.app = request_response(
+            self.get_route_handler(), needs_exit_stacks=self.needs_exit_stacks
+        )
+
+    def needs_exit_stacks(self) -> bool:
+        if self.uses_exit_stacks:
+            return True
+        provider = self.dependency_overrides_provider
+        return bool(getattr(provider, "dependency_overrides", None))
 
     def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
         route = cast(_APIRouteLike, self)

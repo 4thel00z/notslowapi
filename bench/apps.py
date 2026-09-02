@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable, MutableMapping
 from pathlib import Path
 from typing import Any
 
-from notsoslow import FastAPI
+from notsoslow import APIRouter, FastAPI
 from pydantic import BaseModel
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -79,6 +79,17 @@ async def fastapi_untyped():  # type: ignore[no-untyped-def]
     return PAYLOAD
 
 
+l2c_fastapi_included = FastAPI()
+included_router = APIRouter()
+
+
+@included_router.get("/")
+async def fastapi_included() -> dict[str, Any]:
+    return PAYLOAD
+
+
+l2c_fastapi_included.include_router(included_router)
+
 l3_fastapi_params = FastAPI()
 
 
@@ -135,6 +146,7 @@ RUNGS: dict[str, ASGIApp] = {
     "l1b_starlette_params": l1b_starlette_params,
     "l2_fastapi_dict": l2_fastapi_dict,
     "l2b_fastapi_untyped": l2b_fastapi_untyped,
+    "l2c_fastapi_included": l2c_fastapi_included,
     "l3_fastapi_params": l3_fastapi_params,
     "l4_fastapi_model": l4_fastapi_model,
 }

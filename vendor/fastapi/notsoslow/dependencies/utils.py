@@ -573,6 +573,15 @@ async def _solve_generator(
     return await stack.enter_async_context(cm)
 
 
+def dependant_has_generator_dependencies(dependant: Dependant) -> bool:
+    return any(
+        _is_gen_callable(sub.call)
+        or _is_async_gen_callable(sub.call)
+        or dependant_has_generator_dependencies(sub)
+        for sub in dependant.dependencies
+    )
+
+
 @dataclass
 class SolvedDependency:
     values: dict[str, Any]
@@ -598,13 +607,7 @@ async def solve_dependencies(
     _uses_scopes_cache: _UsesScopesCache | None = None,
 ) -> SolvedDependency:
     request_astack = request.scope.get("fastapi_inner_astack")
-    assert isinstance(request_astack, AsyncExitStack), (
-        "fastapi_inner_astack not found in request scope"
-    )
     function_astack = request.scope.get("fastapi_function_astack")
-    assert isinstance(function_astack, AsyncExitStack), (
-        "fastapi_function_astack not found in request scope"
-    )
     values: dict[str, Any] = {}
     errors: list[Any] = []
     if response is None and (dependant.dependencies or dependant.response_param_name):
@@ -664,6 +667,10 @@ async def solve_dependencies(
             use_astack = request_astack
             if sub_dependant.scope == "function":
                 use_astack = function_astack
+            if not isinstance(use_astack, AsyncExitStack):
+                raise RuntimeError(
+                    "dependency with yield needs an exit stack in the request scope"
+                )
             solved = await _solve_generator(
                 dependant=use_sub_dependant,
                 stack=use_astack,
