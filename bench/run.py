@@ -29,6 +29,7 @@ class Rung:
     server: str = "uvicorn"
     server_args: tuple[str, ...] = ()
     tag: str = ""
+    workers: int = 1
 
     @property
     def label(self) -> str:
@@ -39,6 +40,8 @@ class Rung:
             tags.append(f"{self.loop}+{self.http}")
         if self.tag:
             tags.append(self.tag)
+        if self.workers != 1:
+            tags.append(f"w{self.workers}")
         if self.gc_freeze:
             tags.append("gc_freeze")
         if not tags:
@@ -97,6 +100,11 @@ LADDER: list[Rung] = [
         server="granian",
     ),
     Rung("l5b_fastapi_50routes_included", f"{BASE}/r39", server="granian"),
+    Rung("l0_raw", f"{BASE}/", server="granian", workers=6),
+    Rung("l2_fastapi_dict", f"{BASE}/", server="granian", workers=4),
+    Rung("l2_fastapi_dict", f"{BASE}/", server="granian", workers=6),
+    Rung("l2_fastapi_dict", f"{BASE}/", server="granian", workers=12),
+    Rung("l2_fastapi_dict", f"{BASE}/", workers=6),
     Rung(
         "l0_raw",
         f"{BASE}/",
@@ -157,7 +165,7 @@ def server_command(rung: Rung) -> list[str]:
             "--port",
             str(PORT),
             "--workers",
-            "1",
+            str(rung.workers),
             "--loop",
             rung.loop,
             "--no-log",
@@ -180,6 +188,8 @@ def server_command(rung: Rung) -> list[str]:
         "--no-access-log",
         "--log-level",
         "warning",
+        "--workers",
+        str(rung.workers),
         *rung.server_args,
     ]
 
