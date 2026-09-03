@@ -94,7 +94,7 @@ from notslowapi.starlette._exception_handler import (
 )
 from notslowapi.starlette._utils import get_route_path, is_async_callable
 from notslowapi.starlette.concurrency import iterate_in_threadpool, run_in_threadpool
-from notslowapi.starlette.datastructures import URL, FormData, QueryParams, URLPath
+from notslowapi.starlette.datastructures import URL, FormData, URLPath
 from notslowapi.starlette.exceptions import HTTPException
 from notslowapi.starlette.requests import Request
 from notslowapi.starlette.responses import (
@@ -460,7 +460,6 @@ class ParamsHandlerParts:
     """
 
     specs: tuple[Any, ...]
-    has_query: bool
     call: Callable[..., Awaitable[Any]]
     respond: Callable[[Any, Scope], Response]
     serialize: Callable[[Any, Scope], bytes] | None
@@ -476,7 +475,6 @@ def params_route_app(parts: ParamsHandlerParts) -> ASGIApp:
     The Request object is built only when an exception needs it.
     """
     specs = parts.specs
-    has_query = parts.has_query
     call = parts.call
     respond = parts.respond
     serialize = parts.serialize
@@ -494,13 +492,7 @@ def params_route_app(parts: ParamsHandlerParts) -> ASGIApp:
         else:
             sender = send
         try:
-            values, errors = extract_params(
-                specs,
-                scope.get("path_params") or {},
-                QueryParams(scope["query_string"]) if has_query else None,
-                None,
-                None,
-            )
+            values, errors = extract_params(specs, scope)
             if errors:
                 raise RequestValidationError(
                     errors, body=None, endpoint_ctx=endpoint_context(scope)
@@ -1265,7 +1257,6 @@ def get_request_handler(
         if param_specs is not None:
             plain_app.parts = ParamsHandlerParts(  # type: ignore[attr-defined]
                 specs=param_specs,
-                has_query=bool(dependant.query_params),
                 call=call,
                 respond=respond_trivial,
                 serialize=serialize_trivial,

@@ -18,9 +18,10 @@ Type annotations were introspected for every parameter on every request; `ModelF
 
 ## Parameters read straight from the scope
 
-Routes whose parameters are only path and query params still ran the general solver on every request: `solve_dependencies`, two `request_params_to_args` calls, two helpers per parameter, `request.query_params`, and a `Request` object that only the error paths read. `compile_param_specs` now builds one tuple per parameter when the route is built (routes with dependencies, body, header or cookie params, `Request`/`Response`/`BackgroundTasks` parameters or model query params keep the solver), and `params_route_app` reads `path_params` from the scope, parses the query string once, validates with the same defaults and errors, and sends the response the direct way; the `Request` exists only when an exception needs it.
+Routes whose parameters are only path and query params still ran the general solver on every request: `solve_dependencies`, two `request_params_to_args` calls, two helpers per parameter, `request.query_params`, and a `Request` object that only the error paths read. `compile_param_specs` now builds one tuple per parameter when the route is built (routes with dependencies, body, header or cookie params, `Request`/`Response`/`BackgroundTasks` parameters or model query params keep the solver), and `params_route_app` reads `path_params` from the scope, parses the query string once, validates with the same defaults and errors, and sends the response the direct way; the `Request` exists only when an exception needs it. Every route and dependency now does the same: query values come from the query string parsed once per request, header values from the raw header list with the alias pre-encoded, so no `QueryParams` or `Headers` object is built for plain parameters.
 
 - l3_fastapi_params: 21.4 → 18.9 (46.7k → 52.9k req/s); on granian 11.4 → 10.0 (87.7k → 100.0k req/s)
+- l6_fastapi_depends: 25.0 → 23.3, on granian 14.5 → 13.0; l3_fastapi_params: 18.3 → 17.7, on granian 9.3 → 9.0
 
 ## Dependency facts computed once
 
