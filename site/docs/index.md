@@ -35,7 +35,7 @@ One core, Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of 3 x 5 
 | pydantic body + response_model | 52.1 µs/req | 26.1 µs/req | 20.1 µs/req |
 | 50 routes via include_router | 92.2 µs/req | 26.3 µs/req | 17.3 µs/req |
 
-Staying on uvicorn: 1.8x the requests per core on the plain route, 2.5x on typed parameters, 3.5x on fifty included routes. Moving the plain route to granian: 3.6x. The before column is `bench/baseline/results_ladder_v1.json`; the after columns are the same-window runs recorded in the commit messages and `results_ladder_v3.json`. How they were taken is in [Benchmark method](benchmarks-method.md).
+Staying on uvicorn: 1.8x the requests per core on the plain route, 2.5x on typed parameters, 3.5x on fifty included routes. Moving the plain route to granian: 3.6x. The before column is `bench/baseline/results_ladder_v1.json` for the first three rows and the before-run in the include_router commit message for the fourth; the after columns are the same-window runs recorded in the commit messages and `results_ladder_v3.json`. How they were taken is in [Benchmark method](benchmarks-method.md).
 
 ## Pages
 

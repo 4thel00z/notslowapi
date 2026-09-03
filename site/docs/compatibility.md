@@ -1,6 +1,6 @@
 # Compatibility
 
-notslowapi 0.1.0 has the same public API as FastAPI 0.141.1. Classes, functions, parameters and behaviors are upstream's; the changes are internal. The check is the upstream test suite, run unchanged apart from import paths.
+notslowapi 0.1.0 has the same public API as FastAPI 0.141.1. Classes, functions, parameters and behaviors are upstream's; the changes are internal. The check is the upstream test suite with its imports rewritten.
 
 ## Imports
 
@@ -42,7 +42,7 @@ Nothing is installed under the `starlette` name. Code that imports `starlette.*`
 
 ## The test suite
 
-The merged suite is FastAPI's 3,335 tests plus Starlette's 1,154: 4,489 in total. All pass. Eight further tests fail for environmental reasons (the OpenTelemetry SDK not installed, `strawberry.fastapi`, `fastapi-cli`, tests that depend on the working directory) and fail the same way before and after every change. CI runs ruff on both trees and then the suite:
+The merged suite is FastAPI's 3,335 tests plus Starlette's 1,154: 4,489 pass. Eight more fail for environmental reasons (the OpenTelemetry SDK not installed, `strawberry.fastapi`, `fastapi-cli`, tests that depend on the working directory) and fail the same way before and after every change. CI runs ruff on both trees and then the suite:
 
 ```console
 uv sync --group test
