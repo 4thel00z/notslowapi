@@ -14,8 +14,6 @@ from notslowapi.middleware.cors import CORSMiddleware
 from notslowapi.testclient import TestClient
 ```
 
-The modules upstream exposes under `fastapi.*` exist under `notslowapi.*`: `responses`, `requests`, `middleware`, `security`, `openapi`, `encoders`, `exceptions`, `background`, `staticfiles`, `templating`, `testclient`, `websockets`, `sse`, `status`.
-
 ## Starlette
 
 The modified Starlette 1.6.0 ships inside the package:

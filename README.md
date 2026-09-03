@@ -35,7 +35,7 @@ Python 3.10 to 3.14 and `pydantic>=2.9.0`. Pydantic v1 is not supported. The bas
 from notslowapi import FastAPI
 ```
 
-Replace the package name `fastapi` with `notslowapi` in every import. The modules upstream exposes under `fastapi.*` exist under `notslowapi.*`: `responses`, `requests`, `middleware`, `security`, `openapi`, `encoders`, `exceptions`, `background`, `staticfiles`, `templating`, `testclient`, `websockets`, `sse`, `status`.
+Replace the package name `fastapi` with `notslowapi` in every import.
 
 ## Run
 
@@ -61,7 +61,14 @@ One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5
 | plain JSON route | 31.2 µs, 32,033 req/s | 18.3 µs, 54,793 req/s | 9.1 µs, 110,154 req/s |
 | int path + str query param | 57.0 µs, 17,531 req/s | 24.2 µs, 41,405 req/s | 14.3 µs, 69,742 req/s |
 | pydantic body + response_model | 52.1 µs, 19,212 req/s | 26.1 µs, 38,295 req/s | 20.1 µs, 49,777 req/s |
-| 50 routes via include_router | 92.2 µs, 10,800 req/s * | 26.3 µs, 37,968 req/s | 17.3 µs, 57,864 req/s |
+| 50 routes via include_router | 92.2 µs, 10,842 req/s * | 26.3 µs, 37,968 req/s | 17.3 µs, 57,864 req/s |
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="site/landing/assets/numbers-dark.svg">
+    <img src="site/landing/assets/numbers.svg" alt="Microseconds per request by route: FastAPI 0.141.1 on uvicorn against notslowapi on uvicorn and on granian" width="760">
+  </picture>
+</p>
 
 \* This rung did not exist in `results_ladder_v1.json`. The 92.2 µs is the before-run of the include_router change (`bench/baseline/results_fix11_before.json`), measured on a tree that already had the first ten changes, so it understates the day-one gap.
 

@@ -9,6 +9,8 @@ import sys
 from html import escape
 from pathlib import Path
 
+from chart import write_charts
+
 SITE = Path(__file__).resolve().parent
 ROOT = SITE.parent
 OUT = ROOT / "out"
@@ -130,6 +132,7 @@ def main() -> None:
     landing = SITE / "landing" / "index.html"
     if not landing.exists():
         raise SystemExit("site/landing/index.html is missing: copy the chosen mockup there")
+    write_charts()
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()

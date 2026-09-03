@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 398" width="760" height="398" font-family="Instrument Sans, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" role="img" aria-label="Microseconds per request by route">
+<rect width="760" height="398" fill="#fbfbf9" rx="16"/>
+<text x="24" y="30" font-size="15" font-weight="600" fill="#0e0e0d">µs per request, one core, lower is better</text>
+<rect x="24" y="41" width="10" height="10" rx="2" fill="#a3a39c"/>
+<text x="39" y="50" fill="#5c5c57" font-size="12">FastAPI 0.141.1, uvicorn</text>
+<rect x="229" y="41" width="10" height="10" rx="2" fill="#0e0e0d"/>
+<text x="244" y="50" fill="#5c5c57" font-size="12">notslowapi, uvicorn</text>
+<rect x="399" y="41" width="10" height="10" rx="2" fill="#18bed4"/>
+<text x="414" y="50" fill="#5c5c57" font-size="12">notslowapi, granian</text>
+<line x1="236.0" y1="58" x2="236.0" y2="364" stroke="#e4e4df" stroke-width="1"/>
+<text x="236.0" y="380" text-anchor="middle" fill="#5c5c57" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">0</text>
+<line x1="334.0" y1="58" x2="334.0" y2="364" stroke="#e4e4df" stroke-width="1"/>
+<text x="334.0" y="380" text-anchor="middle" fill="#5c5c57" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">25</text>
+<line x1="432.0" y1="58" x2="432.0" y2="364" stroke="#e4e4df" stroke-width="1"/>
+<text x="432.0" y="380" text-anchor="middle" fill="#5c5c57" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">50</text>
+<line x1="530.0" y1="58" x2="530.0" y2="364" stroke="#e4e4df" stroke-width="1"/>
+<text x="530.0" y="380" text-anchor="middle" fill="#5c5c57" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">75</text>
+<line x1="628.0" y1="58" x2="628.0" y2="364" stroke="#e4e4df" stroke-width="1"/>
+<text x="628.0" y="380" text-anchor="middle" fill="#5c5c57" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">100</text>
+<text x="224" y="91.0" text-anchor="end" fill="#0e0e0d">raw ASGI app</text>
+<rect x="236" y="66" width="53.7" height="12" rx="2" fill="#a3a39c"/>
+<text x="295.7" y="76" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">13.7<tspan fill="#5c5c57"> 73,040 req/s</tspan></text>
+<rect x="236" y="81" width="52.8" height="12" rx="2" fill="#0e0e0d"/>
+<text x="294.8" y="91" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">13.5<tspan fill="#5c5c57"> 74,172 req/s</tspan></text>
+<rect x="236" y="96" width="30.4" height="12" rx="2" fill="#18bed4"/>
+<text x="272.4" y="106" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">7.8<tspan fill="#5c5c57"> 128,801 req/s</tspan></text>
+<text x="224" y="154.0" text-anchor="end" fill="#0e0e0d">plain JSON route</text>
+<rect x="236" y="129" width="122.4" height="12" rx="2" fill="#a3a39c"/>
+<text x="364.4" y="139" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">31.2<tspan fill="#5c5c57"> 32,033 req/s</tspan></text>
+<rect x="236" y="144" width="71.5" height="12" rx="2" fill="#0e0e0d"/>
+<text x="313.5" y="154" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">18.3<tspan fill="#5c5c57"> 54,793 req/s</tspan></text>
+<rect x="236" y="159" width="35.6" height="12" rx="2" fill="#18bed4"/>
+<text x="277.6" y="169" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">9.1<tspan fill="#5c5c57"> 110,154 req/s</tspan></text>
+<text x="224" y="217.0" text-anchor="end" fill="#0e0e0d">int path + str query</text>
+<rect x="236" y="192" width="223.6" height="12" rx="2" fill="#a3a39c"/>
+<text x="465.6" y="202" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">57.0<tspan fill="#5c5c57"> 17,531 req/s</tspan></text>
+<rect x="236" y="207" width="94.7" height="12" rx="2" fill="#0e0e0d"/>
+<text x="336.7" y="217" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">24.2<tspan fill="#5c5c57"> 41,405 req/s</tspan></text>
+<rect x="236" y="222" width="56.2" height="12" rx="2" fill="#18bed4"/>
+<text x="298.2" y="232" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">14.3<tspan fill="#5c5c57"> 69,742 req/s</tspan></text>
+<text x="224" y="280.0" text-anchor="end" fill="#0e0e0d">pydantic body + response_model</text>
+<rect x="236" y="255" width="204.0" height="12" rx="2" fill="#a3a39c"/>
+<text x="446.0" y="265" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">52.1<tspan fill="#5c5c57"> 19,212 req/s</tspan></text>
+<rect x="236" y="270" width="102.4" height="12" rx="2" fill="#0e0e0d"/>
+<text x="344.4" y="280" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">26.1<tspan fill="#5c5c57"> 38,295 req/s</tspan></text>
+<rect x="236" y="285" width="78.8" height="12" rx="2" fill="#18bed4"/>
+<text x="320.8" y="295" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">20.1<tspan fill="#5c5c57"> 49,777 req/s</tspan></text>
+<text x="224" y="343.0" text-anchor="end" fill="#0e0e0d">50 routes via include_router *</text>
+<rect x="236" y="318" width="361.6" height="12" rx="2" fill="#a3a39c"/>
+<text x="603.6" y="328" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">92.2<tspan fill="#5c5c57"> 10,842 req/s</tspan></text>
+<rect x="236" y="333" width="103.2" height="12" rx="2" fill="#0e0e0d"/>
+<text x="345.2" y="343" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">26.3<tspan fill="#5c5c57"> 37,968 req/s</tspan></text>
+<rect x="236" y="348" width="67.7" height="12" rx="2" fill="#18bed4"/>
+<text x="309.7" y="358" fill="#0e0e0d" font-size="11" font-family="SF Mono, Menlo, Consolas, monospace">17.3<tspan fill="#5c5c57"> 57,864 req/s</tspan></text>
+</svg>
