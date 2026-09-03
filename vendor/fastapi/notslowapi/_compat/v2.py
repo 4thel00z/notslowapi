@@ -18,7 +18,7 @@ from typing import (
 from notslowapi._compat import lenient_issubclass, shared
 from notslowapi.openapi.constants import REF_TEMPLATE
 from notslowapi.types import IncEx, ModelNameMap, UnionType
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, create_model
+from pydantic import BaseModel, ConfigDict, Field, Json, TypeAdapter, create_model
 from pydantic import PydanticSchemaGenerationError as PydanticSchemaGenerationError
 from pydantic import PydanticUndefinedAnnotation as PydanticUndefinedAnnotation
 from pydantic import ValidationError as ValidationError
@@ -173,6 +173,10 @@ class ModelField:
         )
         in_ = getattr(self.field_info, "in_", None)
         self.param_location: str | None = in_.value if in_ is not None else None
+        self.required: bool = self.field_info.is_required()
+        self.is_json: bool = any(
+            type(item) is Json for item in self.field_info.metadata
+        )
 
     def get_default(self) -> Any:
         if self.field_info.is_required():

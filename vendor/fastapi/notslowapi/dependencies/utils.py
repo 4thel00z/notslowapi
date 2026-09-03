@@ -80,7 +80,7 @@ from notslowapi.starlette.responses import Response
 from notslowapi.starlette.websockets import WebSocket
 from notslowapi.types import DependencyCacheKey
 from notslowapi.utils import create_model_field, get_path_param_names
-from pydantic import BaseModel, Json
+from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from typing_inspection.typing_objects import is_typealiastype
 
@@ -606,8 +606,6 @@ async def solve_dependencies(
     embed_body_fields: bool,
     _uses_scopes_cache: _UsesScopesCache | None = None,
 ) -> SolvedDependency:
-    request_astack = request.scope.get("fastapi_inner_astack")
-    function_astack = request.scope.get("fastapi_function_astack")
     values: dict[str, Any] = {}
     errors: list[Any] = []
     if response is None and (dependant.dependencies or dependant.response_param_name):
@@ -616,7 +614,7 @@ async def solve_dependencies(
         response.status_code = None  # type: ignore
     if dependency_cache is None:
         dependency_cache = {}
-    if _uses_scopes_cache is None:
+    if _uses_scopes_cache is None and dependant.dependencies:
         _uses_scopes_cache = {}
     for sub_dependant in dependant.dependencies:
         sub_dependant.call = cast(Callable[..., Any], sub_dependant.call)
@@ -664,9 +662,11 @@ async def solve_dependencies(
         elif _is_gen_callable(use_sub_dependant.call) or _is_async_gen_callable(
             use_sub_dependant.call
         ):
-            use_astack = request_astack
-            if sub_dependant.scope == "function":
-                use_astack = function_astack
+            use_astack = request.scope.get(
+                "fastapi_function_astack"
+                if sub_dependant.scope == "function"
+                else "fastapi_inner_astack"
+            )
             if not isinstance(use_astack, AsyncExitStack):
                 raise RuntimeError(
                     "dependency with yield needs an exit stack in the request scope"
@@ -748,24 +748,20 @@ def _validate_value_with_model_field(
     *, field: ModelField, value: Any, values: dict[str, Any], loc: tuple[str, ...]
 ) -> tuple[Any, list[Any]]:
     if value is None:
-        if field.field_info.is_required():
+        if field.required:
             return None, [get_missing_field_error(loc=loc)]
         else:
             return deepcopy(field.default), []
     return field.validate(value, values, loc=loc)
 
 
-def _is_json_field(field: ModelField) -> bool:
-    return any(type(item) is Json for item in field.field_info.metadata)
-
-
 def _get_multidict_value(
     field: ModelField, values: Mapping[str, Any], alias: str | None = None
 ) -> Any:
-    alias = alias or get_validation_alias(field)
+    alias = alias or field.alias_for_validation
     if (
         field.is_sequence
-        and (not _is_json_field(field))
+        and not field.is_json
         and isinstance(values, (ImmutableMultiDict, Headers))
     ):
         value = values.getlist(alias)
@@ -773,17 +769,16 @@ def _get_multidict_value(
         value = values.get(alias, None)
     if (
         value is None
-        or (
-            isinstance(field.field_info, params.Form)
-            and isinstance(value, str)  # For type checks
-            and value == ""
-        )
         or (field.is_sequence and len(value) == 0)
+        or (
+            isinstance(value, str)
+            and not value
+            and isinstance(field.field_info, params.Form)
+        )
     ):
-        if field.field_info.is_required():
-            return
-        else:
-            return deepcopy(field.default)
+        if field.required:
+            return None
+        return deepcopy(field.default)
     return value
 
 
@@ -948,9 +943,13 @@ def request_params_to_args(
         if location is None:
             raise TypeError("Params must be subclasses of Param")
         loc = (location, alias)
-        v_, errors_ = _validate_value_with_model_field(
-            field=field, value=value, values=values, loc=loc
-        )
+        if value is None:
+            if field.required:
+                errors.append(get_missing_field_error(loc=loc))
+            else:
+                values[field.name] = deepcopy(field.default)
+            continue
+        v_, errors_ = field.validate(value, values, loc=loc)
         if errors_:
             errors.extend(errors_)
         else:

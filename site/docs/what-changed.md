@@ -4,9 +4,10 @@ Each change is one commit under `vendor/` with a same-window before and after, i
 
 ## Parameter extraction
 
-Type annotations were introspected for every parameter on every request; `ModelField` now computes `is_sequence`, alias, `is_model` and location once, and `QueryParams` parses in one loop with `parse_qsl(keep_blank_values=True)` semantics.
+Type annotations were introspected for every parameter on every request; `ModelField` now computes `is_sequence`, alias, `is_model` and location once, and `QueryParams` parses in one loop with `parse_qsl(keep_blank_values=True)` semantics. `ModelField` also caches `required` and whether the field is `Json`-annotated, `request_params_to_args` validates in one loop instead of three nested helpers, `solve_dependencies` looks up exit stacks only when a `yield` dependency runs, `plain_app` calls the endpoint directly, and `Request.query_params` builds `QueryParams` without the constructor's argument handling.
 
 - l3_fastapi_params: 50.7 → 35.3 (19.7k → 28.3k req/s); later 24.8 → 22.4, on granian 14.5 → 12.3
+- l1b_starlette_params: 20.1 → 19.2; l3_fastapi_params: 23.2 → 23.0, on granian 14.8 → 13.5
 
 ## Dependency solver
 

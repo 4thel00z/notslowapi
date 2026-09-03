@@ -420,6 +420,15 @@ class QueryParams(ImmutableMultiDict[str, str]):
         self._list = [(str(k), str(v)) for k, v in self._list]
         self._dict = {str(k): str(v) for k, v in self._dict.items()}
 
+    @classmethod
+    def from_query_string(cls, query_string: bytes) -> QueryParams:
+        """Build from the raw ASGI query string without the constructor's argument handling."""
+        params = cls.__new__(cls)
+        items = parse_query_string(query_string.decode("latin-1"))
+        params._list = items
+        params._dict = dict(items)
+        return params
+
     def __str__(self) -> str:
         return urlencode(self._list)
 
