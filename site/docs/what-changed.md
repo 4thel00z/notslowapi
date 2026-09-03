@@ -15,6 +15,12 @@ Type annotations were introspected for every parameter on every request; `ModelF
 - l2_fastapi_dict: 31.0 → 26.3; l3_fastapi_params: 36.2 → 32.6; l4_fastapi_model: 42.7 → 36.7
 - l2_fastapi_dict on granian, no-dependency fast path: 14.0 → 10.6
 
+## Parameters read straight from the scope
+
+Routes whose parameters are only path and query params still ran the general solver on every request: `solve_dependencies`, two `request_params_to_args` calls, two helpers per parameter, `request.query_params`, and a `Request` object that only the error paths read. `compile_param_specs` now builds one tuple per parameter when the route is built (routes with dependencies, body, header or cookie params, `Request`/`Response`/`BackgroundTasks` parameters or model query params keep the solver), and `params_route_app` reads `path_params` from the scope, parses the query string once, validates with the same defaults and errors, and sends the response the direct way; the `Request` exists only when an exception needs it.
+
+- l3_fastapi_params: 21.4 → 18.9 (46.7k → 52.9k req/s); on granian 11.4 → 10.0 (87.7k → 100.0k req/s)
+
 ## Exit stacks and middleware only where needed
 
 Two `AsyncExitStack`s were opened per request though only dependencies with `yield` and SSE use them; routes now decide at build time, `AsyncExitStackMiddleware` is no longer installed, and routes that never need a stack get a one-frame app.

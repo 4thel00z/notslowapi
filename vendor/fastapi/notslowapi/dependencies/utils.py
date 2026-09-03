@@ -840,6 +840,93 @@ def request_params_to_model_arg(
     return {field.name: v_}, errors_
 
 
+ParamSpec = tuple[str, str, bool, bool, bool, ModelField]
+"""(name, alias, is_path, is_sequence, required, field): one simple path or query parameter."""
+
+
+def compile_param_specs(dependant: Dependant) -> tuple[ParamSpec, ...] | None:
+    """Specs for a dependant whose parameters are only plain path and query params.
+
+    None when anything else takes part (dependencies, body, header or cookie params,
+    request/response/background/security params, a pydantic model as query params) so the
+    caller keeps solve_dependencies; the specs give extract_params the same values,
+    defaults and errors as request_params_to_args.
+    """
+    if (
+        dependant.dependencies
+        or dependant.body_params
+        or dependant.header_params
+        or dependant.cookie_params
+        or dependant.request_param_name
+        or dependant.http_connection_param_name
+        or dependant.websocket_param_name
+        or dependant.response_param_name
+        or dependant.background_tasks_param_name
+        or dependant.security_scopes_param_name
+    ):
+        return None
+    from pydantic import Json
+
+    specs: list[ParamSpec] = []
+    for fields, location in (
+        (dependant.path_params, "path"),
+        (dependant.query_params, "query"),
+    ):
+        if len(fields) == 1 and fields[0].is_model:
+            return None
+        for field in fields:
+            if field.param_location != location:
+                return None
+            is_sequence = field.is_sequence and not any(
+                type(item) is Json for item in field.field_info.metadata
+            )
+            specs.append(
+                (
+                    field.name,
+                    field.alias_for_validation,
+                    location == "path",
+                    is_sequence,
+                    field.field_info.is_required(),
+                    field,
+                )
+            )
+    return tuple(specs)
+
+
+def extract_params(
+    specs: tuple[ParamSpec, ...],
+    path_params: Mapping[str, Any],
+    query_params: QueryParams | None,
+) -> tuple[dict[str, Any], list[Any]]:
+    """request_params_to_args for compiled specs: same lookups, defaults, validation and errors."""
+    values: dict[str, Any] = {}
+    errors: list[Any] = []
+    for name, alias, is_path, is_sequence, required, field in specs:
+        if is_path:
+            value = path_params.get(alias)
+            location = "path"
+        else:
+            location = "query"
+            if is_sequence:
+                value = query_params.getlist(alias)  # type: ignore[union-attr]
+            else:
+                value = query_params.get(alias)  # type: ignore[union-attr]
+        if value is None or (is_sequence and len(value) == 0):
+            if required:
+                errors.append(get_missing_field_error(loc=(location, alias)))
+                continue
+            value = deepcopy(field.default)
+            if value is None:
+                values[name] = None
+                continue
+        v_, errors_ = field.validate(value, values, loc=(location, alias))
+        if errors_:
+            errors.extend(errors_)
+        else:
+            values[name] = v_
+    return values, errors
+
+
 def request_params_to_args(
     fields: Sequence[ModelField],
     received_params: Mapping[str, Any] | QueryParams | Headers,

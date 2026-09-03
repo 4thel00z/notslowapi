@@ -4,6 +4,7 @@ from notslowapi import BackgroundTasks, FastAPI, HTTPException, Request, Respons
 from notslowapi.responses import JSONResponse, PlainTextResponse
 from notslowapi.routing import (
     APIRoute,
+    ParamsHandlerParts,
     PlainHandlerParts,
     TrivialHandlerParts,
     route_app,
@@ -87,7 +88,7 @@ def test_sync_and_parameter_endpoints_keep_the_two_frame_app() -> None:
     assert not hasattr(route_for("/sync").get_route_handler(), "parts")
     assert isinstance(
         getattr(route_for("/items/{item_id}").get_route_handler(), "parts", None),
-        PlainHandlerParts,
+        ParamsHandlerParts,
     )
     assert (
         route_for("/sync").app.__qualname__ == "trivial_request_response.<locals>.app"
@@ -351,11 +352,17 @@ def plain_route(path: str) -> APIRoute:
     )
 
 
-def test_parameter_endpoints_get_the_plain_route_app() -> None:
+def test_parameter_endpoints_get_the_params_or_plain_route_app() -> None:
     handler = plain_route("/items/{item_id}").get_route_handler()
-    assert isinstance(getattr(handler, "parts", None), PlainHandlerParts)
+    assert isinstance(getattr(handler, "parts", None), ParamsHandlerParts)
     assert (
         plain_route("/items/{item_id}").app.__qualname__
+        == "params_route_app.<locals>.app"
+    )
+    with_response = plain_route("/with-response/{item_id}").get_route_handler()
+    assert isinstance(getattr(with_response, "parts", None), PlainHandlerParts)
+    assert (
+        plain_route("/with-response/{item_id}").app.__qualname__
         == "plain_route_app.<locals>.app"
     )
     assert (
