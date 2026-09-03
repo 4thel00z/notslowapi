@@ -139,25 +139,25 @@
               <tr>
                 <th scope="row">Plain JSON route</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">31.2 µs</span><span class="sub">32,000 req/s</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">15.8 µs</span><span class="sub">63,400 req/s</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">8.5 µs</span><span class="sub">117,300 req/s</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">15.9 µs</span><span class="sub">63,000 req/s</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">8.5 µs</span><span class="sub">118,000 req/s</span></span></td>
               </tr>
               <tr>
                 <th scope="row">int path + str query param</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">57.0 µs</span></span></td>
                 <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">18.3 µs</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">9.0 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">9.3 µs</span></span></td>
               </tr>
               <tr>
                 <th scope="row">pydantic body + response_model</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">52.1 µs</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">21.1 µs</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">14.1 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">19.2 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">13.0 µs</span></span></td>
               </tr>
               <tr>
                 <th scope="row">50 routes via include_router</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="is-na">not measured</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">16.7 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">16.9 µs</span></span></td>
                 <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">8.5 µs</span></span></td>
               </tr>
             </tbody>
@@ -362,7 +362,7 @@
         <li class="stat">
           <strong>3.7×</strong>
           <span class="stat-what">throughput per core</span>
-          <p>Plain JSON route, notslowapi on granian against FastAPI 0.141 on uvicorn: 117,300 req/s against 32,000.</p>
+          <p>Plain JSON route, notslowapi on granian against FastAPI 0.141 on uvicorn: 118,000 req/s against 32,000.</p>
         </li>
         <li class="stat">
           <strong>3.1×</strong>
@@ -370,9 +370,9 @@
           <p>int path + str query param, both on uvicorn: 57.0 µs per request down to 18.3.</p>
         </li>
         <li class="stat">
-          <strong>2.5×</strong>
+          <strong>2.7×</strong>
           <span class="stat-what">on a pydantic body</span>
-          <p>pydantic body + response_model, both on uvicorn: 52.1 µs per request down to 21.1.</p>
+          <p>pydantic body + response_model, both on uvicorn: 52.1 µs per request down to 19.2.</p>
         </li>
       </ul>
     </div>

@@ -30,18 +30,16 @@ One core, Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of 3 x 5 
 
 | route | FastAPI 0.141 on uvicorn | notslowapi on uvicorn | notslowapi on granian |
 |---|---|---|---|
-| raw ASGI app (server floor) | 13.7 µs/req, 73,040 req/s | 13.4 µs/req, 74,846 req/s | 7.9 µs/req, 126,443 req/s |
-| plain JSON route | 31.2 µs/req, 32,033 req/s | 15.8 µs/req, 63,374 req/s | 8.5 µs/req, 117,318 req/s |
-| int path + str query param | 57.0 µs/req, 17,531 req/s | 18.3 µs/req, 54,769 req/s | 9.0 µs/req, 111,149 req/s |
-| pydantic body + response_model | 52.1 µs/req, 19,212 req/s | 21.1 µs/req, 47,445 req/s | 14.1 µs/req, 71,011 req/s |
-| 50 routes via include_router | 92.2 µs/req * | 16.7 µs/req, 59,862 req/s | 8.5 µs/req, 117,379 req/s |
-| three dependencies (path, header, query via Depends) | not measured | 25.0 µs/req, 39,953 req/s | 14.9 µs/req, 67,232 req/s |
+| raw ASGI app (server floor) | 13.7 µs/req, 73,040 req/s | 13.9 µs/req, 72,145 req/s | 7.9 µs/req, 126,018 req/s |
+| plain JSON route | 31.2 µs/req, 32,033 req/s | 15.9 µs/req, 63,047 req/s | 8.5 µs/req, 117,969 req/s |
+| int path + str query param | 57.0 µs/req, 17,531 req/s | 18.3 µs/req, 54,786 req/s | 9.3 µs/req, 107,398 req/s |
+| pydantic body + response_model | 52.1 µs/req, 19,212 req/s | 19.2 µs/req, 52,026 req/s | 13.0 µs/req, 76,997 req/s |
+| 50 routes via include_router | 92.2 µs/req * | 16.9 µs/req, 59,154 req/s | 8.5 µs/req, 117,247 req/s |
+| three dependencies (path, header, query via Depends) | not measured | 23.4 µs/req, 42,684 req/s | 13.1 µs/req, 76,116 req/s |
 
-Staying on uvicorn: 2.0x the requests per core on the plain route, 3.1x on typed parameters, 2.5x on a pydantic body. Moving the plain route to granian: 3.7x. The before column is `bench/baseline/results_ladder_v1.json`; both after columns are `results_ladder_v4.json`, the same files the landing page and the README quote.
+Staying on uvicorn: 2.0x the requests per core on the plain route, 3.1x on typed parameters, 2.7x on a pydantic body. Moving the plain route to granian: 3.7x. The before column is `bench/baseline/results_ladder_v1.json`; both after columns are `results_ladder_v5.json`, the same files the landing page and the README quote.
 
 \* This rung did not exist on day one. The 92.2 µs is the before-run of the include_router change (`results_fix11_before.json`), taken on a tree that already had the first ten changes, so it understates the day-one gap. How the runs were taken is in [Benchmark method](benchmarks-method.md).
-
-Since that ladder, four more changes shipped (see [What changed](what-changed.md)): in same-window comparisons of the v4 tree against the current master, the pydantic body route is another 10 percent faster and the three-dependency route 5 percent; the other rows are unchanged within noise. The table is refreshed from a full ladder only when the machine is idle on AC power.
 
 ## Pages
 

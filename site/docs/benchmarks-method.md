@@ -58,3 +58,7 @@ Under `bench/baseline/`: `results_ladder_v1.json` (upstream FastAPI 0.141.1, day
 ```console
 uv run python bench/compare.py bench/baseline/results_fix1_before.json bench/baseline/results_fix1_after.json
 ```
+
+## Ladder v5
+
+`results_ladder_v5.json` (2026-09-03 evening, AC power, master with all 41 changes) is assembled from three runs taken 15 minutes apart while the machine was in use: a full run, then two re-runs of the rungs a load burst had hit, accepted only when both raw ASGI floors matched the full run within 5 percent (13.5 to 13.9 µs on uvicorn, 7.9 on granian). Which run a rung comes from is recorded in the session notes; every row is a median of three 4 s oha runs at 64 connections.

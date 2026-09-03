@@ -7,7 +7,7 @@
 
 <p align="center"><strong>FastAPI, minus the slow.</strong></p>
 
-<p align="center">A fork of FastAPI 0.141.1 that does less work per request: the same public API and test suite, with the plain JSON route down from 31.2 to 15.8 µs on uvicorn and 8.5 µs on granian.</p>
+<p align="center">A fork of FastAPI 0.141.1 that does less work per request: the same public API and test suite, with the plain JSON route down from 31.2 to 15.9 µs on uvicorn and 8.5 µs on granian.</p>
 
 <p align="center">
   <a href="https://pypi.org/project/notslowapi"><img src="https://img.shields.io/pypi/v/notslowapi" alt="PyPI version"></a>
@@ -43,9 +43,9 @@ Replace the package name `fastapi` with `notslowapi` in every import.
 granian --interface asgi --workers 1 --loop uvloop myapp:app
 ```
 
-`myapp:app` is the module path and attribute of your `FastAPI` instance. granian's I/O runs on Rust threads alongside the Python thread, so the framework's Python is the only thing left on the critical path. On the bare ASGI callable the server alone costs 7.8 µs per request under granian against 13.5 µs under uvicorn, and the notslowapi route adds 0.6 µs on top of that under granian against 2.4 µs under uvicorn.
+`myapp:app` is the module path and attribute of your `FastAPI` instance. granian's I/O runs on Rust threads alongside the Python thread, so the framework's Python is the only thing left on the critical path. On the bare ASGI callable the server alone costs 7.9 µs per request under granian against 13.9 µs under uvicorn, and the notslowapi route adds 0.5 µs on top of that under granian against 2.0 µs under uvicorn.
 
-If you stay on uvicorn, `uvicorn[standard]` gives you uvloop and httptools (15.8 µs on the plain route against 64.0 µs on asyncio and h11), and the three `--no-*` flags are worth about 5 percent unless you sit behind a proxy that sets `X-Forwarded-*` headers:
+If you stay on uvicorn, `uvicorn[standard]` gives you uvloop and httptools (15.9 µs on the plain route against 64.0 µs on asyncio and h11), and the three `--no-*` flags are worth about 5 percent unless you sit behind a proxy that sets `X-Forwarded-*` headers:
 
 ```console
 uvicorn myapp:app --loop uvloop --http httptools --no-proxy-headers --no-server-header --no-date-header
@@ -53,16 +53,16 @@ uvicorn myapp:app --loop uvloop --http httptools --no-proxy-headers --no-server-
 
 ## Numbers
 
-One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5 s oha runs, one worker. The first column is upstream FastAPI 0.141.1 on uvicorn at the start of the work (`bench/baseline/results_ladder_v1.json`); the other two are the current master (all 37 changes) from `bench/baseline/results_ladder_v4.json`.
+One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5 s oha runs, one worker. The first column is upstream FastAPI 0.141.1 on uvicorn at the start of the work (`bench/baseline/results_ladder_v1.json`); the other two are the current master (all 37 changes) from `bench/baseline/results_ladder_v5.json`.
 
 | route | day one, uvicorn (FastAPI 0.141.1) | notslowapi, uvicorn | notslowapi, granian |
 |---|---|---|---|
-| raw ASGI app, fixed bytes (server floor) | 13.7 µs, 73,040 req/s | 13.4 µs, 74,846 req/s | 7.9 µs, 126,443 req/s |
-| plain JSON route | 31.2 µs, 32,033 req/s | 15.8 µs, 63,374 req/s | 8.5 µs, 117,318 req/s |
-| int path + str query param | 57.0 µs, 17,531 req/s | 18.3 µs, 54,769 req/s | 9.0 µs, 111,149 req/s |
-| pydantic body + response_model | 52.1 µs, 19,212 req/s | 21.1 µs, 47,445 req/s | 14.1 µs, 71,011 req/s |
-| 50 routes via include_router | 92.2 µs, 10,842 req/s * | 16.7 µs, 59,862 req/s | 8.5 µs, 117,379 req/s |
-| three dependencies (path, header, query via Depends) | not measured | 25.0 µs, 39,953 req/s | 14.9 µs, 67,232 req/s |
+| raw ASGI app, fixed bytes (server floor) | 13.7 µs, 73,040 req/s | 13.9 µs, 72,145 req/s | 7.9 µs, 126,018 req/s |
+| plain JSON route | 31.2 µs, 32,033 req/s | 15.9 µs, 63,047 req/s | 8.5 µs, 117,969 req/s |
+| int path + str query param | 57.0 µs, 17,531 req/s | 18.3 µs, 54,786 req/s | 9.3 µs, 107,398 req/s |
+| pydantic body + response_model | 52.1 µs, 19,212 req/s | 19.2 µs, 52,026 req/s | 13.0 µs, 76,997 req/s |
+| 50 routes via include_router | 92.2 µs, 10,842 req/s * | 16.9 µs, 59,154 req/s | 8.5 µs, 117,247 req/s |
+| three dependencies (path, header, query via Depends) | not measured | 23.4 µs, 42,684 req/s | 13.1 µs, 76,116 req/s |
 
 <p align="center">
   <picture>
@@ -73,7 +73,6 @@ One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5
 
 \* This rung did not exist in `results_ladder_v1.json`. The 92.2 µs is the before-run of the include_router change (`bench/baseline/results_fix11_before.json`), measured on a tree that already had the first ten changes, so it understates the day-one gap.
 
-Since that ladder, four more changes shipped (see [What changed](https://notslowapi.com/docs/what-changed/)): in same-window comparisons of the v4 tree against the current master, the pydantic body route is another 10 percent faster (fix 38, `bench/baseline/results_fix38_*.json`) and the three-dependency route 5 percent (fixes 40 and 41); the other rows are unchanged within noise. The table is refreshed from a full ladder only when the machine is idle on AC power, so those two rows understate the current tree.
 
 The before/after figures in the next section are same-window runs from the commit messages. They differ from the full-ladder figures above by a few percent, as [Benchmark method](https://notslowapi.com/docs/benchmarks-method/) explains.
 

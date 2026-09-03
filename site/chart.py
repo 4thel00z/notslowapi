@@ -79,7 +79,7 @@ def requests_per_second(row: dict | None) -> str:
 
 def load_values() -> list[tuple[str, list[float | None], list[str]]]:
     day_one = rows("results_ladder_v1.json")
-    now = rows("results_ladder_v4.json")
+    now = rows("results_ladder_v5.json")
     fix11 = rows("results_fix11_before.json")
     result = []
     for rung, label in ROUTES:
