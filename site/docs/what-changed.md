@@ -1,6 +1,6 @@
 # What changed
 
-Each change is one commit under `vendor/`, measured before and after in the same window: one core (Apple M3 Pro, Python 3.13), uvicorn with uvloop and httptools unless marked granian, 64 connections, median of 3 x 5 s runs, µs per request. Windows differ, so one change's before need not equal the previous after. Rungs are the apps in `bench/apps.py`; see [Benchmark method](benchmarks-method.md). Themes are in the order their first change was made.
+Each change is one commit under `vendor/` with a same-window before and after, in µs per request on one core under the setup in [Benchmark method](benchmarks-method.md); uvicorn unless marked granian. Windows differ, so a before need not equal the previous after. Rungs are the apps in `bench/apps.py`. Themes are in the order their first change was made.
 
 ## Parameter extraction
 
@@ -17,7 +17,7 @@ Type annotations were introspected for every parameter on every request; `ModelF
 
 ## Exit stacks and middleware only where needed
 
-Two `AsyncExitStack`s were opened per request though only dependencies with `yield` and SSE use them; each route now decides at build time, `AsyncExitStackMiddleware` is no longer installed, and routes that never need a stack get a one-frame route app.
+Two `AsyncExitStack`s were opened per request though only dependencies with `yield` and SSE use them; routes now decide at build time, `AsyncExitStackMiddleware` is no longer installed, and routes that never need a stack get a one-frame app.
 
 - l2_fastapi_dict: 26.3 → 25.4, then 23.8 → 22.7, then 18.4 → 18.0; l4_fastapi_model: 32.3 → 31.5
 
@@ -30,7 +30,7 @@ Included routes rebuilt their handler on every request; it is cached now, routes
 
 ## Exception handling and dispatch frames
 
-Response-start tracking became plain functions, then one tracker shared through the scope; without user middleware, `ServerErrorMiddleware`, `ExceptionMiddleware` and the router became one `ExceptionHandlingMiddleware` (apps with user middleware keep all three); `APIRoute.handle`, `FastAPI.__call__` and `request_response` each dropped a frame; `JSONResponse.render` calls the C encoder directly. The shared-tracker commit was not measured: its window was too noisy, and it says so.
+Response-start tracking became plain functions, then one tracker shared through the scope; without user middleware, `ServerErrorMiddleware`, `ExceptionMiddleware` and the router became one `ExceptionHandlingMiddleware` (apps with user middleware keep all three); `APIRoute.handle`, `FastAPI.__call__` and `request_response` each dropped a frame; `JSONResponse.render` calls the C encoder directly. The shared-tracker commit went unmeasured; its window was too noisy.
 
 - l2_fastapi_dict: 24.6 → 23.8, then 18.9 → 18.2, then 19.4 → 18.9
 - l1_starlette: 18.6 → 18.0, then 17.5 → 16.8 (granian 10.2 → 9.4)
@@ -55,4 +55,4 @@ The last commit moves the modified Starlette into the package as `notslowapi.sta
 
 ## What did not change
 
-The public API: each commit's probe (routing order, included routers, dependencies with `yield`, exceptions before and after response start, forms, response types) is identical before and after. The OpenAPI path list, checked in the included-router probe. The test suite: 3,335 FastAPI and 1,154 Starlette tests, 4,489 in total, with the same 8 environmental failures throughout.
+The public API: each commit's probe (routing, included routers, `yield` dependencies, exceptions around response start, forms, response types) is identical before and after. The OpenAPI path list. The test suite: 3,335 FastAPI plus 1,154 Starlette tests, 4,489 in total, same 8 environmental failures throughout.

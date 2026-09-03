@@ -28,7 +28,7 @@ A rung's µs/request minus l0_raw is the cost of everything above the server; `b
 oha -z 5s -c 64 --no-tui --output-format json http://127.0.0.1:8123/
 ```
 
-A success rate below 100% aborts. It records requests/s, p50 and p99 per repeat; µs/request is 1,000,000 over the median requests/s. uvicorn runs with `--loop uvloop --http httptools --no-access-log --log-level warning`, granian with `--interface asgi --workers 1 --loop uvloop --no-log`; variants are tagged `[asyncio+h11]`, `[tuned]`, `[granian]`, `[w6]`, `[gc_freeze]`.
+A success rate below 100% aborts. It records requests/s, p50 and p99 per repeat; µs/request is 1,000,000 over the median requests/s. uvicorn runs with `--loop uvloop --http httptools --no-access-log --log-level warning`, granian with `--interface asgi --workers 1 --loop uvloop --no-log`; other server setups are tagged, as in `l2_fastapi_dict[granian]`.
 
 ```console
 uv run python -m bench.run
@@ -43,7 +43,7 @@ BENCH_ONLY=l2_fastapi_dict,l3_fastapi_params uv run python -m bench.run
 
 ## Before and after
 
-Each change was measured in one window against the previous commit, stashed, at a load average low enough that repeats agree; later changes alternate after/before/after. Runs during a system stall (indexing, a backup, load average of 7 and above) were discarded and the commit says so; one commit's window was too noisy to measure at all. A `gc.freeze()` control left medians unchanged with p99 spikes present, so the tail is sporadic stalls, not garbage collection.
+Each change was measured in one window against the previous commit, stashed, at a load average low enough that repeats agree; later changes alternate after/before/after. Runs during a system stall (indexing, a backup, load average of 7 and above) were discarded and the commit says so; one commit's window was too noisy to measure at all. A `gc.freeze()` control left medians unchanged with p99 spikes present: the tail is sporadic stalls, not garbage collection.
 
 A rung's same-window figure and its full-ladder figure differ by a few percent: the plain route is 17.1 µs in the last same-window run and 18.3 µs in `results_ladder_v3.json`. This site quotes same-window figures for before/after comparisons and the full ladder for the per-server table.
 
@@ -53,7 +53,7 @@ Multi-worker runs put the load generator and the server on the same cores. Six g
 
 ## Raw files
 
-Under `bench/baseline/`: `results_ladder_v1.json` (upstream FastAPI 0.141.1, day one), `results_ladder_v2.json` and `results_ladder_v3.json` (full ladder later; v3 is current), `results_fixN_before.json` and `results_fixN_after.json` (one pair per change), `results_servers_v1.json` (uvicorn default and tuned, granian, granian `--task-impl rust`), `results_workers_sweep_v1.json` and `wrk_vs_oha_w6_v1.txt` (multi-worker), `results_controls_v1.json` and `results_gc_freeze_check.json` (controls). Compare two files rung by rung:
+Under `bench/baseline/`: `results_ladder_v1.json` (upstream FastAPI 0.141.1, day one), `results_ladder_v3.json` (current full ladder; v2 is older), `results_fixN_before.json` and `results_fixN_after.json` (one pair per change), `results_servers_v1.json` (uvicorn default and tuned, granian, granian `--task-impl rust`), `results_workers_sweep_v1.json` and `wrk_vs_oha_w6_v1.txt` (multi-worker), `results_controls_v1.json` and `results_gc_freeze_check.json`. Compare two files rung by rung:
 
 ```console
 uv run python bench/compare.py bench/baseline/results_fix1_before.json bench/baseline/results_fix1_after.json

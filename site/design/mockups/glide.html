@@ -548,7 +548,7 @@ details[open] summary svg{transform:rotate(45deg)}
     <div class="wrap deploy-grid">
       <div>
         <h2>Deploy on granian</h2>
-        <p class="lead">The granian column above is what you get in production. If you stay on uvicorn, the plain route still runs 1.8× faster than FastAPI 0.141; pass the three flags below.</p>
+        <p class="lead">Use granian. If you stay on uvicorn, the plain route still runs 1.8× faster than FastAPI 0.141; pass the three flags below.</p>
       </div>
       <div class="deploy-panels">
         <div class="deploy-panel">
@@ -558,7 +558,7 @@ details[open] summary svg{transform:rotate(45deg)}
         </div>
         <div class="deploy-panel">
           <h3>uvicorn</h3>
-          <p>Skip proxy handling and the two headers uvicorn adds to every response.</p>
+          <p>Pass these three flags.</p>
           <pre class="code"><code>uvicorn myapp:app --no-proxy-headers --no-server-header --no-date-header</code></pre>
         </div>
       </div>
