@@ -359,8 +359,17 @@ class PlainHandlerParts:
     endpoint_context: Callable[[Scope], EndpointContext]
 
 
-def plain_route_app(parts: PlainHandlerParts) -> ASGIApp:
-    """trivial_request_response with plain_app inlined: solve, call, serialize and send in one coroutine."""
+def plain_route_app(
+    parts: PlainHandlerParts,
+    needs_exit_stacks: Callable[[], bool] | None = None,
+    fallback: ASGIApp | None = None,
+) -> ASGIApp:
+    """trivial_request_response with plain_app inlined: solve, call, serialize and send in one coroutine.
+
+    For a route with dependencies, needs_exit_stacks is checked per request (dependency
+    overrides can swap in a dependency with yield) and the request goes to fallback, the
+    general request_response app, when it is true.
+    """
     solve = parts.solve
     call = parts.call
     respond = parts.respond
@@ -371,6 +380,9 @@ def plain_route_app(parts: PlainHandlerParts) -> ASGIApp:
     endpoint_context = parts.endpoint_context
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        if needs_exit_stacks is not None and needs_exit_stacks():
+            await fallback(scope, receive, send)  # type: ignore[misc]
+            return
         request = Request(scope, receive, send)
         tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
         if tracker is None:
@@ -519,13 +531,22 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
     """The ASGI app for a route: the one-frame variant when no exit stack can ever be needed.
 
     Without sub-dependencies nothing can be overridden into a dependency with yield, so the
-    build-time uses_exit_stacks decision is final. A handler carrying TrivialHandlerParts
-    or PlainHandlerParts (a coroutine endpoint from an un-overridden get_route_handler) is
+    build-time uses_exit_stacks decision is final; with sub-dependencies but no yield the
+    one-frame plain_route_app checks needs_exit_stacks per request and falls back to the
+    general app. A handler carrying TrivialHandlerParts, ParamsHandlerParts or
+    PlainHandlerParts (a coroutine endpoint from an un-overridden get_route_handler) is
     inlined into the wrapper.
     """
-    if route.uses_exit_stacks or route.dependant.dependencies:
+    if route.uses_exit_stacks:
         return request_response(handler, needs_exit_stacks=route.needs_exit_stacks)
     parts = getattr(handler, "parts", None)
+    if route.dependant.dependencies:
+        general = request_response(handler, needs_exit_stacks=route.needs_exit_stacks)
+        if isinstance(parts, PlainHandlerParts):
+            return plain_route_app(
+                parts, needs_exit_stacks=route.needs_exit_stacks, fallback=general
+            )
+        return general
     if isinstance(parts, TrivialHandlerParts):
         return trivial_route_app(parts)
     if isinstance(parts, ParamsHandlerParts):
