@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notslowapi</title>
+<meta name="description" content="notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same test suite, drop-in.">
+<script>document.documentElement.classList.add('js')</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap">
+<style>
+:root{
+  --ground:#fafafa;
+  --panel:#eeeeee;
+  --ink:#020202;
+  --ink-2:#1f1d1c;
+  --mute:#6b6664;
+  --rule-2:#a8a3a1;
+  --rule:#d6d3d2;
+  --accent:#ef6f2e;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --gutter:clamp(1.25rem,4vw,3rem);
+  --max:80rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--ground);color:var(--ink);font:400 1rem/1.55 var(--sans);-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility}
+body{background:var(--ground);min-width:0;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:.15em}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,pre,kbd{font-family:var(--mono);font-size:.875em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:var(--max);margin:0 auto;padding-left:var(--gutter);padding-right:var(--gutter)}
+
+/* labels: the reference's uppercase mono module labels */
+.lab{font:500 .75rem/1 var(--mono);text-transform:uppercase;letter-spacing:.02em;color:var(--mute)}
+.lab b{color:var(--ink);font-weight:500}
+.mod-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--rule)}
+.mod-head .lab+.lab{text-align:right}
+
+/* display type */
+.h2{font:600 clamp(1.875rem,4.2vw,3.25rem)/1 var(--sans);text-transform:uppercase;letter-spacing:-.03em;max-width:22ch;text-wrap:balance}
+.lede{font-size:1.0625rem;line-height:1.5;color:var(--ink-2);max-width:56ch}
+.small{font-size:.875rem;line-height:1.5;color:var(--mute);max-width:64ch}
+
+/* modules */
+.mod{border-bottom:1px solid var(--rule)}
+.mod-body{padding:clamp(2.5rem,6vw,5rem) 0}
+.dark{background:var(--ink);color:var(--ground);--rule:#1f1d1c;--rule-2:#3a3634;--mute:#a8a3a1;--ink-2:#d6d3d2;--panel:#0e0d0d}
+.dark .lab b{color:var(--ground)}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:10;background:var(--ground);border-bottom:1px solid var(--rule)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:3.5rem}
+.mark{font:600 1.125rem/1 var(--sans);letter-spacing:-.03em}
+.nav ul{display:flex;gap:clamp(1rem,3vw,2.25rem);list-style:none}
+.nav li a{font:500 .875rem/1 var(--sans);letter-spacing:-.01em}
+
+/* hero */
+.hero .mod-body{display:grid;grid-template-columns:11fr 9fr;gap:clamp(2rem,5vw,4rem);align-items:stretch;padding-top:clamp(2.5rem,6vw,4.5rem)}
+.hero-copy{display:flex;flex-direction:column;justify-content:space-between;gap:2rem;min-width:0}
+.h1{font:600 clamp(2.25rem,5.9vw,4.75rem)/.94 var(--sans);text-transform:uppercase;letter-spacing:-.035em;margin-top:.5rem}
+.h1 .ln{display:block}
+.h1 .w{position:relative;display:inline-block;white-space:nowrap}
+.h1 .w .fin{visibility:hidden}
+.h1 .w .anim{position:absolute;left:0;top:0;white-space:nowrap}
+.hero-sub{max-width:44ch;color:var(--ink-2);font-size:1.0625rem}
+.hero-meta{display:flex;flex-wrap:wrap;gap:.75rem 2rem;padding-top:1.25rem;border-top:1px solid var(--rule)}
+.btns{display:flex;flex-wrap:wrap;gap:.75rem}
+.btn{display:inline-flex;align-items:center;height:2.75rem;padding:0 1.25rem;border:1px solid var(--ink);background:var(--ink);color:var(--ground);font:500 .8125rem/1 var(--mono);text-transform:uppercase;letter-spacing:.02em;transition:background .15s,border-color .15s,color .15s}
+.btn:hover{background:var(--accent);border-color:var(--accent);text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.dark .btn{background:var(--ground);color:var(--ink);border-color:var(--ground)}
+.dark .btn:hover{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+.dark .btn.ghost{background:transparent;color:var(--ground)}
+.dark .btn.ghost:hover{background:var(--ground);color:var(--ink)}
+
+/* terminal */
+.term{position:relative;border:1px dashed var(--rule-2);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+.term-bar{display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;border-bottom:1px dashed var(--rule-2)}
+.dots{display:flex;gap:.375rem}
+.dots i{width:.5rem;height:.5rem;background:var(--rule-2);display:block}
+.term-out{padding:1.25rem 1rem 1.5rem;font:400 .75rem/1.75 var(--mono);color:var(--ink);flex:1;min-height:14.5rem}
+.tl{white-space:pre-wrap;overflow-wrap:anywhere;min-height:1.75em}
+.tl[data-p]::before{content:attr(data-p) " ";color:var(--mute)}
+.tl.gap{min-height:.85em}
+.cur{display:inline-block;width:.55em;height:1.05em;vertical-align:-.15em;background:var(--accent);margin-left:1px}
+.js .cur{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{to{visibility:hidden}}
+.term-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem 1rem;padding:.75rem 1rem;border-top:1px dashed var(--rule-2);margin-top:auto}
+.cross{position:absolute;width:11px;height:11px;color:var(--ink);pointer-events:none}
+.cross.tl{top:-6px;left:-6px}.cross.tr{top:-6px;right:-6px}.cross.bl{bottom:-6px;left:-6px}.cross.br{bottom:-6px;right:-6px}
+
+/* built from */
+.built .wrap{display:grid;grid-template-columns:auto 1fr;align-items:center}
+.built .lab{padding:1.25rem 1.5rem 1.25rem 0;border-right:1px solid var(--rule)}
+.built ul{display:grid;grid-template-columns:repeat(4,1fr);list-style:none}
+.built li{padding:1.25rem 1.5rem;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:.25rem}
+.built li:last-child{border-right:0}
+.built .name{font:500 1.0625rem/1.1 var(--sans);letter-spacing:-.02em}
+.built .ver{font:400 .75rem/1 var(--mono);color:var(--mute)}
+
+/* numbers */
+.numbers .intro{display:grid;grid-template-columns:7fr 5fr;gap:2rem;align-items:end;margin-bottom:2.5rem}
+.tbl-wrap{overflow-x:auto;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:44rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;vertical-align:top;padding:1rem .75rem 1rem 0;border-bottom:1px solid var(--rule)}
+tr:last-child td{border-bottom:0}
+th{font:500 .75rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.02em;color:var(--mute)}
+th b{display:block;color:var(--ink);font-weight:500}
+td.route{font:500 .9375rem/1.3 var(--sans);letter-spacing:-.01em;width:24%}
+td.v{width:25.33%}
+.num{font:500 1.375rem/1 var(--mono);letter-spacing:-.02em}
+.num small{font-size:.75rem;color:var(--mute);margin-left:.25rem;letter-spacing:0}
+.rps{display:block;font:400 .75rem/1.4 var(--mono);color:var(--mute);margin-top:.25rem}
+.bar{height:6px;background:var(--panel);margin-top:.75rem;width:100%}
+.bar i{display:block;height:100%;width:calc(var(--w) * 100%);background:var(--ink-2);transform-origin:left center}
+.bar.base i{background:var(--rule-2)}
+.bar.fast i{background:var(--accent)}
+.js .reveal .bar i{transform:scaleX(0);transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.js .reveal.in .bar i{transform:scaleX(1)}
+.factors{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--rule)}
+.factors div{padding:1.5rem 1.5rem 1.5rem 0;border-right:1px solid var(--rule)}
+.factors div:last-child{border-right:0}
+.factors div+div{padding-left:1.5rem}
+.factors .x{font:600 clamp(2rem,3.5vw,2.75rem)/1 var(--sans);letter-spacing:-.04em}
+.factors p{font-size:.875rem;color:var(--mute);margin-top:.5rem;line-height:1.45}
+.method{display:grid;grid-template-columns:7fr 5fr;gap:2rem;padding-top:2rem}
+.method p{font-size:.9375rem;color:var(--ink-2);max-width:60ch}
+.method .lab{padding-top:.25rem}
+
+/* how it got faster */
+.grid-6{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule);border-left:1px solid var(--rule)}
+.cell{padding:1.75rem 1.5rem 2rem;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);display:flex;flex-direction:column;gap:.75rem;min-height:13rem}
+.cell h3{font:500 1.125rem/1.25 var(--sans);letter-spacing:-.02em}
+.cell p{font-size:.9375rem;color:var(--ink-2);line-height:1.5}
+.cell .lab{margin-top:auto}
+.how .h2{margin-bottom:2.5rem}
+
+/* switch */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--ink)}
+.step{padding:1.75rem 1.5rem 2rem 0;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:1rem}
+.step+.step{padding-left:1.5rem}
+.step:last-child{border-right:0}
+.step .n{font:500 .75rem/1 var(--mono);color:var(--mute)}
+.step h3{font:500 1.25rem/1.2 var(--sans);letter-spacing:-.02em}
+.step p{font-size:.9375rem;color:var(--ink-2)}
+.snip{margin-top:auto;border:1px dashed var(--rule-2);background:var(--panel);padding:.875rem 1rem;font:400 .8125rem/1.5 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.snip[data-p]::before{content:attr(data-p) " ";color:var(--mute)}
+
+/* deploy */
+.deploy .cols{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--ink)}
+.deploy .col{padding:1.75rem 1.5rem 2rem 0;display:flex;flex-direction:column;gap:1rem}
+.deploy .col+.col{padding-left:1.5rem;border-left:1px solid var(--rule)}
+.deploy h3{font:500 1.25rem/1.2 var(--sans);letter-spacing:-.02em}
+.deploy p{font-size:.9375rem;color:var(--ink-2);max-width:48ch}
+.limits{display:grid;grid-template-columns:7fr 5fr;gap:2rem;padding-top:2rem;border-top:1px solid var(--rule);margin-top:2rem}
+.limits ul{list-style:none;display:grid;gap:.5rem;max-width:60ch}
+.limits li{font-size:.875rem;color:var(--mute);padding-left:1rem;position:relative}
+.limits li::before{content:"";position:absolute;left:0;top:.65em;width:.375rem;height:1px;background:var(--rule-2)}
+
+/* faq */
+.faq .mod-body{display:grid;grid-template-columns:5fr 7fr;gap:2rem}
+.faq details{border-top:1px solid var(--rule)}
+.faq details:last-child{border-bottom:1px solid var(--rule)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1.25rem 0;font:500 1.125rem/1.3 var(--sans);letter-spacing:-.02em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary svg{flex:none;width:14px;height:14px;transition:transform .2s}
+.faq details[open] summary svg{transform:rotate(45deg)}
+.faq .a{padding:0 0 1.5rem;font-size:.9375rem;color:var(--ink-2);max-width:56ch}
+.faq .a code{background:var(--panel);padding:.1em .35em}
+
+/* cta */
+.cta .mod-body{display:grid;grid-template-columns:7fr 5fr;gap:2rem;align-items:end}
+.cta .h2{max-width:14ch}
+.cta .install{border:1px dashed var(--rule-2);background:var(--panel);padding:1rem 1.25rem;font:400 .875rem/1.5 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.cta .install::before{content:"$ ";color:var(--mute)}
+.cta .stack{display:flex;flex-direction:column;gap:1rem}
+
+/* footer */
+.foot{padding:clamp(2.5rem,6vw,4rem) 0 2rem}
+.foot-mark{font:600 clamp(3.5rem,13.5vw,12.5rem)/.85 var(--sans);letter-spacing:-.05em;color:var(--ink);border-bottom:1px solid var(--rule);padding-bottom:.15em;overflow:hidden}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;padding:2rem 0;border-bottom:1px solid var(--rule)}
+.foot-grid p{font-size:.9375rem;color:var(--ink-2);max-width:32ch}
+.foot-grid ul{list-style:none;display:grid;gap:.5rem;margin-top:.875rem}
+.foot-grid li{font-size:.9375rem}
+.foot-grid li span{font:400 .75rem/1 var(--mono);color:var(--mute);margin-left:.5rem}
+.foot-base{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem 2rem;padding-top:1.25rem}
+
+/* reveal */
+.js .reveal{opacity:0;transform:translateY(12px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.js .reveal.in{opacity:1;transform:none}
+
+@media (prefers-reduced-motion:reduce){
+  .js .reveal{opacity:1;transform:none;transition:none}
+  .js .reveal .bar i{transform:none;transition:none}
+  .js .cur{animation:none}
+  .faq summary svg{transition:none}
+  .btn{transition:none}
+}
+
+@media (max-width:64rem){
+  .hero .mod-body{grid-template-columns:1fr}
+  .term-out{min-height:12rem}
+  .grid-6{grid-template-columns:repeat(2,1fr)}
+  .cell{min-height:0}
+  .foot-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:48rem){
+  .numbers .intro,.method,.limits,.faq .mod-body,.cta .mod-body{grid-template-columns:1fr}
+  .built .wrap{grid-template-columns:1fr}
+  .built .lab{border-right:0;border-bottom:1px solid var(--rule);padding:1rem 0}
+  .built ul{grid-template-columns:1fr 1fr}
+  .built li:nth-child(2n){border-right:0}
+  .built li:nth-child(-n+2){border-bottom:1px solid var(--rule)}
+  .built li:nth-child(odd){padding-left:0}
+  .tbl-wrap{overflow:visible}
+  table{min-width:0;display:block}
+  thead{display:none}
+  tbody,tr{display:block}
+  tr{padding:1rem 0;border-bottom:1px solid var(--rule)}
+  tr:last-child{border-bottom:0}
+  td,td.route,td.v{display:block;width:auto;border:0;padding:.5rem 0}
+  td.route{font-size:1.0625rem;padding:0 0 .25rem}
+  td.v::before{content:attr(data-label);display:block;font:500 .6875rem/1 var(--mono);text-transform:uppercase;letter-spacing:.02em;color:var(--mute);margin-bottom:.375rem}
+  .num{font-size:1.25rem}
+  .rps{display:inline;margin:0 0 0 .5rem}
+  .bar{margin-top:.5rem}
+  .factors{grid-template-columns:1fr 1fr}
+  .factors div{border-right:0;border-bottom:1px solid var(--rule);padding-left:0 !important}
+  .factors div:nth-child(odd){border-right:1px solid var(--rule)}
+  .factors div:nth-child(even){padding-left:1.5rem !important}
+  .factors div:nth-last-child(-n+2){border-bottom:0}
+  .steps{grid-template-columns:1fr}
+  .step{border-right:0;border-bottom:1px solid var(--rule);padding-left:0}
+  .step:last-child{border-bottom:0}
+  .deploy .cols{grid-template-columns:1fr}
+  .deploy .col+.col{padding-left:0;border-left:0;border-top:1px solid var(--rule)}
+  .grid-6{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:30rem){
+  .foot-grid{grid-template-columns:1fr}
+  .built ul{grid-template-columns:1fr}
+  .built li{border-right:0;padding-left:0;border-bottom:1px solid var(--rule)}
+  .built li:last-child{border-bottom:0}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="mark" href="#top">notslowapi</a>
+    <nav aria-label="Primary">
+      <ul>
+        <li><a href="#switch">Docs</a></li>
+        <li><a href="#numbers">Benchmarks</a></li>
+        <li><a href="https://github.com/4thel00z/notslowapi">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="mod hero">
+  <div class="wrap">
+    <div class="mod-head">
+      <p class="lab">A fork of <b>FastAPI 0.141</b>, made faster</p>
+      <p class="lab">Same API, same <b>4,489</b> tests</p>
+    </div>
+    <div class="mod-body">
+      <div class="hero-copy">
+        <div>
+          <h1 class="h1">
+            <span class="sr">Same code. Fewer microseconds.</span>
+            <span class="ln" aria-hidden="true"><span class="w">SAME</span> <span class="w">CODE.</span></span>
+            <span class="ln" aria-hidden="true"><span class="w">FEWER</span></span>
+            <span class="ln" aria-hidden="true"><span class="w">MICROSECONDS.</span></span>
+          </h1>
+          <p class="hero-sub" style="margin-top:2rem">notslowapi is FastAPI measured layer by layer and made faster at each one. Change one import; the API and the test suite stay the same.</p>
+        </div>
+        <div>
+          <div class="btns">
+            <a class="btn" href="#switch">Switch in a minute</a>
+            <a class="btn ghost" href="#numbers">See the numbers</a>
+          </div>
+          <div class="hero-meta">
+            <p class="lab">PyPI <b>notslowapi</b></p>
+            <p class="lab">License <b>MIT + BSD</b></p>
+            <p class="lab">Drop-in for <b>FastAPI</b></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="term" aria-label="Install and run">
+        <svg class="cross tl" viewBox="0 0 11 11" aria-hidden="true"><path d="M5.5 0v11M0 5.5h11" stroke="currentColor" stroke-width="1"/></svg>
+        <svg class="cross tr" viewBox="0 0 11 11" aria-hidden="true"><path d="M5.5 0v11M0 5.5h11" stroke="currentColor" stroke-width="1"/></svg>
+        <svg class="cross bl" viewBox="0 0 11 11" aria-hidden="true"><path d="M5.5 0v11M0 5.5h11" stroke="currentColor" stroke-width="1"/></svg>
+        <svg class="cross br" viewBox="0 0 11 11" aria-hidden="true"><path d="M5.5 0v11M0 5.5h11" stroke="currentColor" stroke-width="1"/></svg>
+        <div class="term-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="lab">install, import, serve</span>
+        </div>
+        <div class="term-out" id="term">
+          <div class="tl" data-p="$" data-text="uv add notslowapi[granian]"></div>
+          <div class="tl gap"></div>
+          <div class="tl" data-text="from notslowapi import FastAPI"></div>
+          <div class="tl gap"></div>
+          <div class="tl" data-p="$" data-text="granian --interface asgi --workers 1 --loop uvloop myapp:app"></div>
+        </div>
+        <div class="term-foot">
+          <span class="lab">plain JSON route, one core</span>
+          <span class="lab"><b>8.7 us/req</b> 114,000 req/s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mod built" aria-label="Built from">
+  <div class="wrap">
+    <p class="lab">Built from</p>
+    <ul>
+      <li><span class="name">FastAPI</span><span class="ver">0.141</span></li>
+      <li><span class="name">Starlette</span><span class="ver">1.6, vendored</span></li>
+      <li><span class="name">Pydantic</span><span class="ver">2</span></li>
+      <li><span class="name">Granian</span><span class="ver">2</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="mod numbers" id="numbers">
+  <div class="wrap">
+    <div class="mod-head">
+      <p class="lab">Numbers</p>
+      <p class="lab">one core, Apple M3 Pro, Python 3.13</p>
+    </div>
+    <div class="mod-body reveal">
+      <div class="intro">
+        <h2 class="h2">Microseconds per request, route by route</h2>
+        <p class="small">64 keep-alive connections, median of 3 x 5 s. Lower is faster. Bars are scaled to the slowest cell, 92.2 us.</p>
+      </div>
+
+      <div class="tbl-wrap">
+        <table role="table">
+          <thead>
+            <tr role="row">
+              <th scope="col" role="columnheader">Route</th>
+              <th scope="col" role="columnheader"><b>FastAPI 0.141</b>on uvicorn</th>
+              <th scope="col" role="columnheader"><b>notslowapi</b>on uvicorn</th>
+              <th scope="col" role="columnheader"><b>notslowapi</b>on granian</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr role="row">
+              <td class="route" role="cell">plain JSON route</td>
+              <td class="v" role="cell" data-label="FastAPI 0.141 on uvicorn"><span class="num">31.2<small>us/req</small></span><span class="rps">32,000 req/s</span><div class="bar base" style="--w:.338"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on uvicorn"><span class="num">17.1<small>us/req</small></span><span class="rps">58,000 req/s</span><div class="bar" style="--w:.185"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on granian"><span class="num">8.7<small>us/req</small></span><span class="rps">114,000 req/s</span><div class="bar fast" style="--w:.094"><i></i></div></td>
+            </tr>
+            <tr role="row">
+              <td class="route" role="cell">int path + str query param</td>
+              <td class="v" role="cell" data-label="FastAPI 0.141 on uvicorn"><span class="num">57.0<small>us/req</small></span><div class="bar base" style="--w:.618"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on uvicorn"><span class="num">22.4<small>us/req</small></span><div class="bar" style="--w:.243"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on granian"><span class="num">12.3<small>us/req</small></span><div class="bar fast" style="--w:.133"><i></i></div></td>
+            </tr>
+            <tr role="row">
+              <td class="route" role="cell">pydantic body + response_model</td>
+              <td class="v" role="cell" data-label="FastAPI 0.141 on uvicorn"><span class="num">52.1<small>us/req</small></span><div class="bar base" style="--w:.565"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on uvicorn"><span class="num">26.1<small>us/req</small></span><div class="bar" style="--w:.283"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on granian"><span class="num">20.1<small>us/req</small></span><div class="bar fast" style="--w:.218"><i></i></div></td>
+            </tr>
+            <tr role="row">
+              <td class="route" role="cell">50 routes via include_router</td>
+              <td class="v" role="cell" data-label="FastAPI 0.141 on uvicorn"><span class="num">92.2<small>us/req</small></span><div class="bar base" style="--w:1"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on uvicorn"><span class="num">26.3<small>us/req</small></span><div class="bar" style="--w:.285"><i></i></div></td>
+              <td class="v" role="cell" data-label="notslowapi on granian"><span class="num">17.3<small>us/req</small></span><div class="bar fast" style="--w:.188"><i></i></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="factors">
+        <div><p class="x">3.6x</p><p>throughput per core on a plain route, granian vs day-one FastAPI on uvicorn</p></div>
+        <div><p class="x">1.8x</p><p>on uvicorn alone, same route, same server</p></div>
+        <div><p class="x">2.5x</p><p>on typed path and query parameters</p></div>
+        <div><p class="x">3.5x</p><p>on 50 routes reached through include_router</p></div>
+      </div>
+
+      <div class="method">
+        <p class="lab">Method</p>
+        <p>Every change was measured before and after on a ladder of ASGI rungs, with native sampling from sample(1) and pyinstrument. Runs alternate after, before, after to reject noise. The numbers and the profiles are committed under <code>bench/baseline</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mod dark how" id="how">
+  <div class="wrap">
+    <div class="mod-head">
+      <p class="lab">What changed</p>
+      <p class="lab">measured layer by layer</p>
+    </div>
+    <div class="mod-body reveal">
+      <h2 class="h2">How it got faster</h2>
+      <div class="grid-6">
+        <div class="cell">
+          <h3>Parameters without introspection</h3>
+          <p>Parameter extraction stopped introspecting type annotations on every request.</p>
+          <p class="lab">request path</p>
+        </div>
+        <div class="cell">
+          <h3>A solver that skips unasked work</h3>
+          <p>The dependency solver skips what no endpoint asked for: the throwaway Response, unused query and cookie parsing.</p>
+          <p class="lab">dependencies</p>
+        </div>
+        <div class="cell">
+          <h3>Layers only where a route needs them</h3>
+          <p>Per-request exit stacks and middleware layers exist only when a route needs them.</p>
+          <p class="lab">middleware</p>
+        </div>
+        <div class="cell">
+          <h3>Routes matched once</h3>
+          <p>Routes reached via include_router are matched once, not twice, and static paths are indexed.</p>
+          <p class="lab">routing</p>
+        </div>
+        <div class="cell">
+          <h3>One exception layer, one frame</h3>
+          <p>One exception-handling layer instead of three, and one frame from router to handler.</p>
+          <p class="lab">call stack</p>
+        </div>
+        <div class="cell">
+          <h3>Direct encoding and parsing</h3>
+          <p>JSON encoding and query-string parsing run directly, without stdlib wrapper layers.</p>
+          <p class="lab">serialization</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mod switch" id="switch">
+  <div class="wrap">
+    <div class="mod-head">
+      <p class="lab">Switch in a minute</p>
+      <p class="lab">three steps</p>
+    </div>
+    <div class="mod-body reveal">
+      <h2 class="h2" style="margin-bottom:2.5rem">One import, one minute</h2>
+      <ol class="steps" style="list-style:none">
+        <li class="step">
+          <p class="n">1</p>
+          <h3>Install</h3>
+          <p>One package, with the granian extra.</p>
+          <pre class="snip" data-p="$">uv add notslowapi[granian]</pre>
+        </li>
+        <li class="step">
+          <p class="n">2</p>
+          <h3>Change the import</h3>
+          <p>Everything else in your app stays as it is.</p>
+          <pre class="snip">from notslowapi import FastAPI</pre>
+        </li>
+        <li class="step">
+          <p class="n">3</p>
+          <h3>Serve</h3>
+          <p>Run it under granian on uvloop.</p>
+          <pre class="snip" data-p="$">granian --interface asgi --workers 1 --loop uvloop myapp:app</pre>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="mod deploy" id="deploy">
+  <div class="wrap">
+    <div class="mod-head">
+      <p class="lab">Deploy</p>
+      <p class="lab">granian recommended</p>
+    </div>
+    <div class="mod-body reveal">
+      <h2 class="h2" style="margin-bottom:2.5rem">Serve it right</h2>
+      <div class="cols">
+        <div class="col">
+          <h3>Use granian</h3>
+          <p>The measured 8.7 us/req on a plain route is granian on uvloop, one worker on one core.</p>
+          <pre class="snip" data-p="$">granian --interface asgi --workers 1 --loop uvloop myapp:app</pre>
+        </div>
+        <div class="col">
+          <h3>On uvicorn</h3>
+          <p>Still 1.8x on the plain route. Pass these three flags.</p>
+          <pre class="snip" data-p="$">uvicorn myapp:app --no-proxy-headers --no-server-header --no-date-header</pre>
+        </div>
+      </div>
+      <div class="limits">
+        <p class="lab">Limits</p>
+        <ul>
+          <li>The numbers are single-core. Multi-core scaling needs a separate client machine.</li>
+          <li>Code importing starlette.* directly gets upstream Starlette, not the vendored copy.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mod faq" id="faq">
+  <div class="wrap">
+    <div class="mod-head">
+      <p class="lab">Questions</p>
+      <p class="lab">three, short</p>
+    </div>
+    <div class="mod-body reveal">
+      <h2 class="h2">Before you switch</h2>
+      <div>
+        <details>
+          <summary>Is it really drop-in?<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0v14M0 7h14" stroke="currentColor" stroke-width="1.5"/></svg></summary>
+          <p class="a">Yes. notslowapi is a fork of FastAPI 0.141 with the same API and the same test suite, 4,489 tests. Change <code>from fastapi import FastAPI</code> to <code>from notslowapi import FastAPI</code> and run the app you already have.</p>
+        </details>
+        <details>
+          <summary>What happens to Starlette?<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0v14M0 7h14" stroke="currentColor" stroke-width="1.5"/></svg></summary>
+          <p class="a">Starlette 1.6 is vendored and tuned inside notslowapi; nothing is installed under the starlette name. Code that imports <code>starlette.*</code> directly gets upstream Starlette.</p>
+        </details>
+        <details>
+          <summary>Do I have to run granian?<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0v14M0 7h14" stroke="currentColor" stroke-width="1.5"/></svg></summary>
+          <p class="a">No. On uvicorn notslowapi is 1.8x FastAPI on the plain route; pass <code>--no-proxy-headers --no-server-header --no-date-header</code>. Granian on uvloop is where the 3.6x comes from.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mod cta">
+  <div class="wrap">
+    <div class="mod-body reveal">
+      <h2 class="h2">Ready to ship fewer microseconds?</h2>
+      <div class="stack">
+        <pre class="install">uv add notslowapi[granian]</pre>
+        <div class="btns">
+          <a class="btn" href="#switch">Read the docs</a>
+          <a class="btn ghost" href="https://github.com/4thel00z/notslowapi">View on GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p class="foot-mark" aria-hidden="true">notslowapi</p>
+    <div class="foot-grid">
+      <div>
+        <p class="mark">notslowapi</p>
+        <p style="margin-top:.75rem">A fork of FastAPI made faster, measured layer by layer. Same API, same test suite, drop-in.</p>
+      </div>
+      <div>
+        <p class="lab">Project</p>
+        <ul>
+          <li><a href="#switch">Docs</a></li>
+          <li><a href="#numbers">Benchmarks</a></li>
+          <li><a href="https://github.com/4thel00z/notslowapi">GitHub</a><span>4thel00z/notslowapi</span></li>
+          <li><a href="https://pypi.org/project/notslowapi/">PyPI</a><span>notslowapi</span></li>
+        </ul>
+      </div>
+      <div>
+        <p class="lab">Built from</p>
+        <ul>
+          <li>FastAPI<span>0.141</span></li>
+          <li>Starlette<span>1.6, vendored</span></li>
+          <li>Pydantic<span>2</span></li>
+          <li>Granian<span>2</span></li>
+        </ul>
+      </div>
+      <div>
+        <p class="lab">License</p>
+        <ul>
+          <li>MIT<span>FastAPI</span></li>
+          <li>BSD<span>vendored Starlette</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-base">
+      <p class="lab">notslowapi.com</p>
+      <p class="lab">one core, Apple M3 Pro, Python 3.13, median of 3 x 5 s</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&/=+*<>';
+
+  var words = document.querySelectorAll('.h1 .w');
+  var scrambleEnd = 0;
+  words.forEach(function(w){
+    var text = w.textContent;
+    w.innerHTML = '<span class="fin">' + text + '</span><span class="anim">' + (reduce ? text : '') + '</span>';
+  });
+  if(!reduce){
+    var order = 0;
+    words.forEach(function(w){
+      var text = w.textContent, anim = w.lastChild, offset = 260 + order * 55, start;
+      order += text.length;
+      var total = offset + text.length * 55 + 200;
+      scrambleEnd = Math.max(scrambleEnd, total);
+      function tick(now){
+        if(!start) start = now;
+        var t = now - start, out = '';
+        for(var i = 0; i < text.length; i++){
+          out += t >= offset + i * 55 ? text[i] : glyphs[Math.random() * glyphs.length | 0];
+        }
+        anim.textContent = out;
+        if(t < total) requestAnimationFrame(tick); else anim.textContent = text;
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  var lines = Array.prototype.slice.call(document.querySelectorAll('#term .tl'));
+  var cur = document.createElement('span'); cur.className = 'cur'; cur.setAttribute('aria-hidden','true');
+  if(reduce){
+    lines.forEach(function(l){ l.textContent = l.dataset.text || ''; });
+    lines[lines.length - 1].appendChild(cur);
+  } else {
+    var li = 0, ci = 0;
+    function type(){
+      if(li >= lines.length){ return; }
+      var l = lines[li], text = l.dataset.text || '';
+      if(ci === 0){ l.appendChild(cur); }
+      if(ci < text.length){
+        cur.before(document.createTextNode(text[ci++]));
+        setTimeout(type, 22 + Math.random() * 40);
+        return;
+      }
+      li++; ci = 0;
+      setTimeout(type, text ? 320 : 60);
+    }
+    setTimeout(type, scrambleEnd + 200);
+  }
+
+  var revealed = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window) || reduce){
+    revealed.forEach(function(el){ el.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    });
+  }, {rootMargin: '0px 0px -8% 0px', threshold: 0.05});
+  revealed.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>

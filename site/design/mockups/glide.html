@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notslowapi</title>
+<meta name="description" content="notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same test suite, drop-in.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#fbfbf9;
+  --panel:#f5f5f2;
+  --line:#e4e4df;
+  --ink:#0e0e0d;
+  --ink-2:#5c5c57;
+  --ink-3:#a3a39c;
+  --aqua:#18bed4;
+  --aqua-wash:#e6f7fa;
+  --dark:#0D0D0D;
+  --on-dark-2:#a6a6a0;
+  --on-dark-line:rgba(255,255,255,.12);
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --r-panel:24px;
+  --r-card:20px;
+  --r-code:12px;
+  --max:1120px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:88px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--sans);font-weight:450;font-size:1rem;line-height:1.55;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+svg{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3,p,ul,ol,figure,pre{margin:0}
+ul,ol{padding:0;list-style:none}
+button{font:inherit;color:inherit}
+code,pre{font-family:var(--mono)}
+h1,h2,h3{font-weight:575;text-wrap:balance}
+h2{font-size:clamp(1.75rem,1.3rem + 1.6vw,2.5rem);line-height:1.1;letter-spacing:-.025em}
+p{text-wrap:pretty}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:4px}
+.dark :focus-visible{outline-color:#fff}
+
+.wrap{width:min(100% - 40px,var(--max));margin-inline:auto}
+@media (min-width:720px){.wrap{width:min(100% - 64px,var(--max))}}
+.section{padding-block:clamp(72px,5vw + 40px,120px)}
+.lead{color:var(--ink-2);font-size:1.125rem;line-height:1.5;margin-top:16px;max-width:38rem}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:44px;padding:0 22px;border-radius:999px;
+  font-weight:575;font-size:.9375rem;letter-spacing:-.005em;text-decoration:none;white-space:nowrap;
+  transition:background-color .15s ease,border-color .15s ease;
+}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-ink:hover{background:#2b2b29}
+.btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-sm{height:36px;padding:0 16px;font-size:.875rem}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:10;background:rgba(251,251,249,.88);-webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px)}
+.nav .wrap{display:flex;align-items:center;gap:clamp(14px,3vw,36px);height:64px}
+.wordmark{font-weight:575;font-size:1.1875rem;letter-spacing:-.03em;text-decoration:none;line-height:1}
+.nav-links{display:flex;gap:clamp(14px,2.5vw,28px);font-size:.9375rem;font-weight:500}
+.nav-links a{text-decoration:none;color:var(--ink-2)}
+.nav-links a:hover{color:var(--ink)}
+.nav .btn{margin-left:auto}
+@media (max-width:399px){.nav-links{font-size:.875rem}.wordmark{font-size:1.0625rem}}
+
+/* hero */
+.hero{padding-block:clamp(48px,7vw,104px) clamp(48px,5vw,72px);text-align:center}
+.hero h1{
+  font-size:clamp(2.25rem,1.35rem + 3.3vw,3.75rem);line-height:1.02;letter-spacing:-.035em;
+  max-width:15ch;margin-inline:auto;
+}
+.hero .lead{margin:20px auto 0;font-size:clamp(1.0625rem,1rem + .4vw,1.25rem)}
+.install{
+  max-width:760px;margin:40px auto 0;text-align:left;overflow:hidden;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-panel);
+  box-shadow:0 1px 2px rgba(14,14,13,.04),0 32px 64px -32px rgba(14,14,13,.22);
+}
+.install-rows{padding:8px}
+.install-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:16px;padding:14px 12px 14px 16px}
+.install-rows>li+li{border-top:1px solid var(--panel)}
+.install-label{font-size:.8125rem;font-weight:575;color:var(--ink-2)}
+.install-code{
+  display:block;font-size:.875rem;line-height:1.5;
+  white-space:pre-wrap;overflow-wrap:break-word;color:var(--ink);
+}
+.install-row.is-primary .install-code{font-weight:600;font-size:clamp(1rem,.9rem + .55vw,1.1875rem)}
+.copy{
+  display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 10px;
+  border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-2);
+  font-size:.8125rem;font-weight:575;cursor:pointer;transition:border-color .15s,color .15s,background-color .15s;
+}
+.copy:hover{border-color:var(--ink);color:var(--ink)}
+.copy svg{width:15px;height:15px}
+.copy .ic-check{display:none}
+.copy[data-state="copied"]{border-color:var(--aqua);background:var(--aqua-wash);color:var(--ink)}
+.copy[data-state="copied"] .ic-copy{display:none}
+.copy[data-state="copied"] .ic-check{display:block}
+.install-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:16px 20px;background:var(--panel);border-top:1px solid var(--line);
+  font-size:.9375rem;color:var(--ink-2);
+}
+@media (max-width:600px){
+  .install-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label copy" "code code";row-gap:8px}
+  .install-label{grid-area:label}
+  .install-code{grid-area:code}
+  .copy{grid-area:copy}
+  .install-foot{flex-direction:column;align-items:stretch;text-align:center}
+}
+
+/* ticker */
+.ticker{padding-block:8px 0}
+.ticker-head{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--ink-2);font-size:.9375rem;margin-bottom:24px}
+.ticker-pause{background:none;border:0;padding:2px 0;color:var(--ink-2);font-size:.875rem;font-weight:575;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--ink-3)}
+.ticker-pause:hover{color:var(--ink)}
+.marquee{
+  display:flex;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+}
+.marquee-track{display:flex;flex-shrink:0;gap:12px;padding-right:12px;animation:marquee 32s linear infinite}
+.marquee[data-paused="true"] .marquee-track{animation-play-state:paused}
+.badge{
+  display:inline-flex;align-items:center;height:52px;padding:0 26px;white-space:nowrap;
+  border:1px solid var(--line);border-radius:999px;background:#fff;
+  color:var(--ink-2);font-weight:575;font-size:1.0625rem;letter-spacing:-.01em;
+}
+@keyframes marquee{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){
+  .marquee{-webkit-mask-image:none;mask-image:none}
+  .marquee-track{animation:none;flex-wrap:wrap;justify-content:center;flex-shrink:1;padding-right:0}
+  .marquee-track[aria-hidden]{display:none}
+  .ticker-pause{display:none}
+}
+
+/* numbers: the one dark block */
+.numbers-shell{margin-top:clamp(56px,6vw,88px)}
+.dark{background:var(--dark);color:#fff}
+@media (min-width:720px){.dark{margin-inline:16px;border-radius:32px}}
+.numbers-head{max-width:40rem}
+.dark .lead{color:var(--on-dark-2)}
+.table-wrap{margin-top:40px}
+.bench{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.bench th,.bench td{text-align:left;padding:18px 16px 18px 0;border-top:1px solid var(--on-dark-line);vertical-align:top}
+.bench th:last-child,.bench td:last-child{padding-right:0}
+.bench thead th{font-size:.875rem;font-weight:500;color:var(--on-dark-2);border-top:0;padding-top:0;padding-bottom:14px}
+.bench thead th.is-hi{color:var(--aqua)}
+.bench tbody th{font-weight:500;color:#fff;font-size:1rem;width:30%}
+.bench td{font-size:1.125rem;font-weight:575;letter-spacing:-.01em}
+.bench td.is-hi .val{color:var(--aqua)}
+.bench .cell{display:flex;flex-direction:column;gap:2px}
+.bench .sub{font-size:.8125rem;font-weight:450;color:var(--on-dark-2);letter-spacing:0}
+.table-note{margin-top:24px;font-size:.875rem;color:var(--on-dark-2);max-width:44rem}
+@media (max-width:719px){
+  .bench thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .bench,.bench tbody,.bench tr,.bench th,.bench td{display:block;width:auto}
+  .bench tr{padding:18px 0 10px;border-top:1px solid var(--on-dark-line)}
+  .bench tbody th{padding:0 0 10px;border:0;font-weight:575}
+  .bench td{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:7px 0;border:0;font-size:1rem}
+  .bench td::before{content:attr(data-col);font-size:.875rem;font-weight:450;color:var(--on-dark-2);flex-shrink:0;letter-spacing:0}
+  .bench td.is-hi::before{color:var(--aqua)}
+  .bench .cell{align-items:flex-end;text-align:right}
+}
+
+/* six feature cards */
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:48px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:12px 12px 28px}
+.card-art{background:var(--panel);border-radius:14px;padding:10px 12px;margin-bottom:22px}
+.card-art svg{width:100%;height:auto}
+.card h3,.card p{padding-inline:12px}
+.card h3{font-size:1.125rem;letter-spacing:-.012em;line-height:1.3}
+.card p{margin-top:8px;color:var(--ink-2);font-size:.9375rem;line-height:1.5}
+.art .k{fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.art .l{fill:none;stroke:#cfcfc8;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.art .g{fill:none;stroke:#c6c6bf;stroke-width:1.5;stroke-dasharray:4 4;stroke-linecap:round;stroke-linejoin:round}
+.art .a{fill:none;stroke:var(--aqua);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.art .af{fill:var(--aqua)}
+.art .kf{fill:var(--ink)}
+.art text{font-family:var(--mono);font-size:9px;fill:var(--ink)}
+.art .tg{fill:var(--ink-3)}
+.art .big{font-size:22px}
+@media (max-width:1023px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:599px){.cards{grid-template-columns:1fr}}
+
+/* three connected steps */
+.steps-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:48px}
+.step{position:relative;display:flex;flex-direction:column}
+.step-panel{flex:1}
+.step:not(:last-child)::before{content:"";position:absolute;top:15px;left:32px;right:-24px;height:2px;background:var(--aqua)}
+.step-n{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;
+  font-weight:575;font-size:.9375rem;box-shadow:0 0 0 6px var(--ground);
+}
+.step-panel{margin-top:20px;background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:24px}
+.step h3{font-size:1.125rem;letter-spacing:-.012em}
+.step p{margin-top:6px;color:var(--ink-2);font-size:.9375rem}
+.code{
+  margin-top:16px;background:var(--panel);border-radius:var(--r-code);padding:14px 16px;
+  font-size:.875rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:break-word;
+}
+@media (max-width:719px){
+  .steps-row{grid-template-columns:1fr;gap:20px}
+  .step{display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:16px}
+  .step:not(:last-child)::before{top:32px;bottom:-20px;left:15px;right:auto;width:2px;height:auto}
+  .step-panel{margin-top:0}
+}
+
+/* deploy */
+.deploy-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px;align-items:start}
+.deploy-panels{display:grid;gap:16px}
+.deploy-panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:22px 24px 24px}
+.deploy-panel h3{font-size:1.0625rem;letter-spacing:-.01em}
+.deploy-panel p{margin-top:4px;color:var(--ink-2);font-size:.9375rem}
+@media (max-width:899px){.deploy-grid{grid-template-columns:1fr;gap:32px}}
+
+/* what stays identical */
+.same-shell{background:var(--panel);border-radius:clamp(24px,3vw,32px);padding:clamp(28px,5vw,64px)}
+.same-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:40px}
+.same-tile{background:#fff;border-radius:16px;padding:24px 22px;display:flex;flex-direction:column;gap:16px;font-weight:575;font-size:1.0625rem;letter-spacing:-.01em}
+.same-tile svg{width:28px;height:28px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.same-tile .dot{fill:var(--aqua);stroke:none}
+.note{margin-top:24px;color:var(--ink-2);font-size:.9375rem;max-width:46rem}
+@media (max-width:719px){.same-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:379px){.same-grid{grid-template-columns:1fr}}
+
+/* three stat cards replace the testimonials */
+.proof-head{max-width:46rem}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:48px}
+.stat{background:var(--panel);border-radius:var(--r-card);padding:28px 28px 32px}
+.stat strong{display:block;font-size:clamp(2.75rem,2.1rem + 2vw,3.5rem);line-height:1;letter-spacing:-.045em;font-weight:575;font-variant-numeric:tabular-nums}
+.stat .stat-what{display:block;margin-top:12px;font-weight:575;font-size:1.0625rem;letter-spacing:-.01em}
+.stat p{margin-top:8px;color:var(--ink-2);font-size:.9375rem}
+@media (max-width:799px){.stats{grid-template-columns:1fr}}
+
+/* faq */
+.faq-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:48px;align-items:start}
+.faq-list details{border-top:1px solid var(--line)}
+.faq-list details:last-child{border-bottom:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0;font-weight:575;font-size:1.125rem;letter-spacing:-.012em}
+summary::-webkit-details-marker{display:none}
+summary svg{width:22px;height:22px;flex-shrink:0;fill:none;stroke:var(--ink);stroke-width:1.75;stroke-linecap:round;transition:transform .2s ease}
+details[open] summary svg{transform:rotate(45deg)}
+.faq-list details p{padding:0 0 24px;color:var(--ink-2);max-width:58ch}
+@media (max-width:799px){.faq-grid{grid-template-columns:1fr;gap:16px}}
+@media (prefers-reduced-motion:reduce){summary svg{transition:none}}
+
+/* cta + footer */
+.cta-inner{text-align:center;max-width:44rem;margin-inline:auto}
+.cta h2{font-size:clamp(2rem,1.4rem + 2.6vw,3.25rem);letter-spacing:-.032em;line-height:1.04}
+.cta .lead{margin-inline:auto}
+.cta-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.cta-code{margin-top:28px;font-size:.9375rem;color:var(--ink-2)}
+.cta-code code{display:inline-block;background:var(--panel);padding:8px 14px;border-radius:10px;color:var(--ink);font-size:.9375rem}
+.foot{border-top:1px solid var(--line);padding-block:40px 48px}
+.foot-grid{display:flex;flex-wrap:wrap;justify-content:space-between;gap:28px 40px;align-items:flex-start}
+.foot-brand p{margin-top:10px;color:var(--ink-2);font-size:.9375rem;max-width:26rem}
+.foot-links{display:flex;flex-wrap:wrap;gap:12px 24px;font-size:.9375rem;font-weight:500}
+.foot-links a{text-decoration:none;color:var(--ink-2)}
+.foot-links a:hover{color:var(--ink)}
+.foot-legal{width:100%;margin-top:8px;color:var(--ink-2);font-size:.875rem}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="wordmark" href="/">notslowapi</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/docs">Docs</a>
+      <a href="#benchmarks">Benchmarks</a>
+    </nav>
+    <a class="btn btn-ghost btn-sm" href="https://github.com/4thel00z/notslowapi">GitHub</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>FastAPI, minus the slow.</h1>
+      <p class="lead">notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same test suite, drop-in: up to 3.6× the throughput per core.</p>
+
+      <div class="install" id="install">
+        <ol class="install-rows">
+          <li class="install-row is-primary">
+            <span class="install-label">install</span>
+            <code class="install-code">uv add notslowapi[granian]</code>
+            <button class="copy" type="button" data-copy="uv add notslowapi[granian]" aria-label="Copy the install command">
+              <svg class="ic-copy" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+              <svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="copy-text">Copy</span>
+            </button>
+          </li>
+          <li class="install-row">
+            <span class="install-label">import</span>
+            <code class="install-code">from notslowapi import FastAPI</code>
+            <button class="copy" type="button" data-copy="from notslowapi import FastAPI" aria-label="Copy the import line">
+              <svg class="ic-copy" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+              <svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="copy-text">Copy</span>
+            </button>
+          </li>
+          <li class="install-row">
+            <span class="install-label">run</span>
+            <code class="install-code">granian --interface asgi --workers 1 --loop uvloop myapp:app</code>
+            <button class="copy" type="button" data-copy="granian --interface asgi --workers 1 --loop uvloop myapp:app" aria-label="Copy the run command">
+              <svg class="ic-copy" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5V4a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+              <svg class="ic-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="copy-text">Copy</span>
+            </button>
+          </li>
+        </ol>
+        <div class="install-foot">
+          <p>Same API, same test suite (4,489 tests), drop-in.</p>
+          <a class="btn btn-ink" href="/docs">Read the docs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ticker" aria-labelledby="ticker-cap">
+    <div class="wrap">
+      <div class="ticker-head">
+        <p id="ticker-cap">Works alongside the stack you already run</p>
+        <button class="ticker-pause" id="marquee-pause" type="button" aria-pressed="false" aria-controls="marquee">Pause</button>
+      </div>
+    </div>
+    <div class="marquee" id="marquee" data-paused="false">
+      <ul class="marquee-track">
+        <li class="badge">Pydantic</li>
+        <li class="badge">Starlette</li>
+        <li class="badge">Granian</li>
+        <li class="badge">uvicorn</li>
+        <li class="badge">SQLAlchemy</li>
+        <li class="badge">httpx</li>
+        <li class="badge">pytest</li>
+      </ul>
+      <ul class="marquee-track" aria-hidden="true">
+        <li class="badge">Pydantic</li>
+        <li class="badge">Starlette</li>
+        <li class="badge">Granian</li>
+        <li class="badge">uvicorn</li>
+        <li class="badge">SQLAlchemy</li>
+        <li class="badge">httpx</li>
+        <li class="badge">pytest</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="numbers-shell">
+    <section class="dark section" id="benchmarks">
+      <div class="wrap">
+        <div class="numbers-head">
+          <h2>Same code. Fewer microseconds.</h2>
+          <p class="lead">One core of an Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of three 5-second runs. Microseconds per request; lower is better.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="bench">
+            <thead>
+              <tr>
+                <th scope="col">Route</th>
+                <th scope="col">FastAPI 0.141 on uvicorn</th>
+                <th scope="col">notslowapi on uvicorn</th>
+                <th scope="col" class="is-hi">notslowapi on granian</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Plain JSON route</th>
+                <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">31.2 µs</span><span class="sub">32,000 req/s</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">17.1 µs</span><span class="sub">58,000 req/s</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">8.7 µs</span><span class="sub">114,000 req/s</span></span></td>
+              </tr>
+              <tr>
+                <th scope="row">int path + str query param</th>
+                <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">57.0 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">22.4 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">12.3 µs</span></span></td>
+              </tr>
+              <tr>
+                <th scope="row">pydantic body + response_model</th>
+                <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">52.1 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">26.1 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">20.1 µs</span></span></td>
+              </tr>
+              <tr>
+                <th scope="row">50 routes via include_router</th>
+                <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">92.2 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">26.3 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">17.3 µs</span></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Single-core numbers; multi-core scaling needs a separate client machine. Numbers and profiles are committed under bench/baseline.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <h2>How it got faster</h2>
+      <p class="lead">Less work per request. Dashed is what a request no longer pays for; the aqua line is the path that remains.</p>
+      <ul class="cards">
+        <li class="card">
+          <figure class="card-art">
+            <svg class="art" viewBox="0 0 240 120" role="img" aria-label="Three repeated inspections of a typed parameter become one cached plan that requests flow past">
+              <rect class="g" x="16" y="20" width="76" height="20" rx="6"/><text class="tg" x="24" y="34">item_id: int</text><circle class="g" cx="101" cy="30" r="5"/><path class="g" d="M105 34l4 4"/>
+              <rect class="g" x="16" y="50" width="76" height="20" rx="6"/><text class="tg" x="24" y="64">item_id: int</text><circle class="g" cx="101" cy="60" r="5"/><path class="g" d="M105 64l4 4"/>
+              <rect class="g" x="16" y="80" width="76" height="20" rx="6"/><text class="tg" x="24" y="94">item_id: int</text><circle class="g" cx="101" cy="90" r="5"/><path class="g" d="M105 94l4 4"/>
+              <path class="k" d="M120 60h14M130 55l4 5-4 5"/>
+              <rect class="a" x="148" y="26" width="76" height="20" rx="6"/><text x="156" y="40">item_id: int</text><circle class="af" cx="224" cy="26" r="3.5"/>
+              <path class="a" d="M148 66h76M148 78h76M148 90h76"/>
+            </svg>
+          </figure>
+          <h3>Annotations read once</h3>
+          <p>Parameter extraction stopped introspecting type annotations on every request.</p>
+        </li>
+        <li class="card">
+          <figure class="card-art">
+            <svg class="art" viewBox="0 0 240 120" role="img" aria-label="A dependency tree where unused branches for Response and cookies are dashed and the used ones are solid">
+              <circle class="kf" cx="120" cy="16" r="5"/>
+              <path class="g" d="M120 21C120 52 48 46 48 76"/>
+              <path class="a" d="M120 21C120 52 96 46 96 76"/>
+              <path class="a" d="M120 21C120 52 144 46 144 76"/>
+              <path class="g" d="M120 21C120 52 192 46 192 76"/>
+              <circle class="g" cx="48" cy="82" r="6"/><circle class="af" cx="96" cy="82" r="6"/><circle class="af" cx="144" cy="82" r="6"/><circle class="g" cx="192" cy="82" r="6"/>
+              <text class="tg" x="48" y="106" text-anchor="middle">Response</text>
+              <text x="96" y="106" text-anchor="middle">path</text>
+              <text x="144" y="106" text-anchor="middle">body</text>
+              <text class="tg" x="192" y="106" text-anchor="middle">cookies</text>
+            </svg>
+          </figure>
+          <h3>Dependencies only when asked</h3>
+          <p>The dependency solver skips work no endpoint asked for: the throwaway Response, unused query and cookie parsing.</p>
+        </li>
+        <li class="card">
+          <figure class="card-art">
+            <svg class="art" viewBox="0 0 240 120" role="img" aria-label="A request passes straight to the handler; middleware and exit-stack layers are dashed because they exist only when needed">
+              <rect class="g" x="56" y="14" width="128" height="20" rx="6"/><text class="tg" x="68" y="28">middleware</text>
+              <rect class="g" x="56" y="44" width="128" height="20" rx="6"/><text class="tg" x="68" y="58">exit stack</text>
+              <rect class="a" x="56" y="74" width="128" height="20" rx="6"/><text x="68" y="88">handler</text>
+              <path class="a" d="M18 84h30M43 79l5 5-5 5"/>
+              <path class="a" d="M192 84h30M217 79l5 5-5 5"/>
+            </svg>
+          </figure>
+          <h3>Layers that exist on demand</h3>
+          <p>Per-request exit stacks and middleware layers exist only when a route needs them.</p>
+        </li>
+        <li class="card">
+          <figure class="card-art">
+            <svg class="art" viewBox="0 0 240 120" role="img" aria-label="A path is matched once instead of twice, and static paths sit in an index with one indexed hit highlighted">
+              <rect class="k" x="16" y="16" width="120" height="22" rx="7"/><text x="26" y="31">/api/items/{id}</text>
+              <path class="a" d="M150 28l5 5 9-10"/>
+              <path class="g" d="M180 28l5 5 9-10"/>
+              <rect class="l" x="16" y="62" width="30" height="18" rx="5"/>
+              <rect class="l" x="52" y="62" width="30" height="18" rx="5"/>
+              <rect class="af" x="88" y="62" width="30" height="18" rx="5"/>
+              <rect class="l" x="124" y="62" width="30" height="18" rx="5"/>
+              <rect class="l" x="160" y="62" width="30" height="18" rx="5"/>
+              <rect class="l" x="196" y="62" width="30" height="18" rx="5"/>
+              <text class="tg" x="16" y="104">static paths, indexed</text>
+            </svg>
+          </figure>
+          <h3>Routers matched once</h3>
+          <p>Routes reached via include_router are matched once, not twice, and static paths are indexed.</p>
+        </li>
+        <li class="card">
+          <figure class="card-art">
+            <svg class="art" viewBox="0 0 240 120" role="img" aria-label="Three nested exception-handling frames collapse into one frame between router and handler">
+              <rect class="g" x="14" y="20" width="92" height="80" rx="12"/>
+              <rect class="g" x="26" y="32" width="68" height="56" rx="9"/>
+              <rect class="g" x="38" y="44" width="44" height="32" rx="6"/>
+              <path class="k" d="M120 60h14M130 55l4 5-4 5"/>
+              <circle class="kf" cx="148" cy="60" r="3"/>
+              <path class="a" d="M151 60h74"/>
+              <rect class="a" x="160" y="42" width="56" height="36" rx="8"/>
+              <circle class="kf" cx="228" cy="60" r="3"/>
+            </svg>
+          </figure>
+          <h3>One exception layer</h3>
+          <p>One exception-handling layer instead of three, and one frame from router to handler.</p>
+        </li>
+        <li class="card">
+          <figure class="card-art">
+            <svg class="art" viewBox="0 0 240 120" role="img" aria-label="Braces wrapped in two dashed layers become bare braces on a direct line">
+              <rect class="g" x="14" y="18" width="92" height="84" rx="12"/>
+              <rect class="g" x="28" y="32" width="64" height="56" rx="8"/>
+              <text class="tg big" x="60" y="68" text-anchor="middle">{ }</text>
+              <path class="k" d="M120 60h14M130 55l4 5-4 5"/>
+              <text class="big" x="188" y="66" text-anchor="middle">{ }</text>
+              <path class="a" d="M156 86h64"/>
+            </svg>
+          </figure>
+          <h3>Direct encoding</h3>
+          <p>JSON encoding and query-string parsing run directly, without stdlib wrapper layers.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="switch">
+    <div class="wrap">
+      <h2>Switch in a minute</h2>
+      <p class="lead">Three steps. Your routes, dependencies and tests stay as they are.</p>
+      <ol class="steps-row">
+        <li class="step">
+          <span class="step-n" aria-hidden="true">1</span>
+          <div class="step-panel">
+            <h3>Install</h3>
+            <p>Adds notslowapi together with the granian extra.</p>
+            <pre class="code"><code>uv add notslowapi[granian]</code></pre>
+          </div>
+        </li>
+        <li class="step">
+          <span class="step-n" aria-hidden="true">2</span>
+          <div class="step-panel">
+            <h3>Swap the import</h3>
+            <p>One line changes. Nothing else in your app does.</p>
+            <pre class="code"><code>from notslowapi import FastAPI</code></pre>
+          </div>
+        </li>
+        <li class="step">
+          <span class="step-n" aria-hidden="true">3</span>
+          <div class="step-panel">
+            <h3>Run</h3>
+            <p>Start the same app on granian with uvloop.</p>
+            <pre class="code"><code>granian --interface asgi --workers 1 --loop uvloop myapp:app</code></pre>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="deploy">
+    <div class="wrap deploy-grid">
+      <div>
+        <h2>Deploy on granian</h2>
+        <p class="lead">The granian column above is what you get in production. If you stay on uvicorn, the plain route still runs 1.8× faster than FastAPI 0.141; pass the three flags below.</p>
+      </div>
+      <div class="deploy-panels">
+        <div class="deploy-panel">
+          <h3>granian</h3>
+          <p>The measured setup: ASGI interface, uvloop.</p>
+          <pre class="code"><code>granian --interface asgi --workers 1 --loop uvloop myapp:app</code></pre>
+        </div>
+        <div class="deploy-panel">
+          <h3>uvicorn</h3>
+          <p>Skip proxy handling and the two headers uvicorn adds to every response.</p>
+          <pre class="code"><code>uvicorn myapp:app --no-proxy-headers --no-server-header --no-date-header</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="same">
+    <div class="wrap">
+      <div class="same-shell">
+        <h2>Everything else stays identical</h2>
+        <p class="lead">Same API, same test suite (4,489 tests), drop-in. The parts of FastAPI you build on are the parts that did not move.</p>
+        <ul class="same-grid">
+          <li class="same-tile">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="7" cy="21" r="2.5"/><circle class="dot" cx="21" cy="14" r="3"/><path d="M9.5 7c5 0 5.5 7 8.5 7M9.5 21c5 0 5.5-7 8.5-7"/></svg>
+            Routing
+          </li>
+          <li class="same-tile">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><circle class="dot" cx="14" cy="6" r="3"/><circle cx="6" cy="22" r="2.5"/><circle cx="22" cy="22" r="2.5"/><path d="M14 9v4.5M14 13.5l-6.5 6M14 13.5l6.5 6"/></svg>
+            Dependencies
+          </li>
+          <li class="same-tile">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M8 3h8l5 5v17H8z"/><path d="M16 3v5h5"/><path d="M11.5 15h7M11.5 19h7"/><circle class="dot" cx="11.5" cy="11" r="1.75"/></svg>
+            OpenAPI
+          </li>
+          <li class="same-tile">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3l9 3v7c0 5.2-3.8 9.3-9 11.5C8.8 22.3 5 18.2 5 13V6z"/><path d="M10 14l3 3 5.5-6.5"/></svg>
+            Validation
+          </li>
+        </ul>
+        <p class="note">Starlette is vendored and tuned inside notslowapi; nothing is installed under the starlette name.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="method">
+    <div class="wrap">
+      <div class="proof-head">
+        <h2>Measured, not estimated.</h2>
+        <p class="lead">Every change was measured before and after on a ladder of ASGI rungs, with native sampling from sample(1) and pyinstrument, alternating after/before/after runs to reject noise. The numbers and profiles are committed under bench/baseline.</p>
+      </div>
+      <ul class="stats">
+        <li class="stat">
+          <strong>3.6×</strong>
+          <span class="stat-what">throughput per core</span>
+          <p>Plain JSON route, notslowapi on granian against FastAPI 0.141 on uvicorn: 114,000 req/s against 32,000.</p>
+        </li>
+        <li class="stat">
+          <strong>2.5×</strong>
+          <span class="stat-what">on typed params</span>
+          <p>int path + str query param, both on uvicorn: 57.0 µs per request down to 22.4.</p>
+        </li>
+        <li class="stat">
+          <strong>3.5×</strong>
+          <span class="stat-what">on 50 included routes</span>
+          <p>50 routes via include_router, both on uvicorn: 92.2 µs per request down to 26.3.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="wrap faq-grid">
+      <h2>Questions</h2>
+      <div class="faq-list">
+        <details>
+          <summary>Is it really drop-in?<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M11 4v14M4 11h14"/></svg></summary>
+          <p>Yes. notslowapi is a fork of FastAPI with the same API and the same 4,489-test suite. Swap the import and run. The one edge: Starlette is vendored under notslowapi, so code that imports starlette.* directly gets upstream Starlette.</p>
+        </details>
+        <details>
+          <summary>Do the numbers hold across cores?<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M11 4v14M4 11h14"/></svg></summary>
+          <p>The published numbers are single-core: one core of an Apple M3 Pro, Python 3.13, 64 keep-alive connections. Multi-core scaling needs a separate client machine, so it is not measured here.</p>
+        </details>
+        <details>
+          <summary>What is the license?<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M11 4v14M4 11h14"/></svg></summary>
+          <p>MIT, inherited from FastAPI, plus BSD for the vendored Starlette.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cta">
+    <div class="wrap cta-inner">
+      <h2>Drop it into your app today</h2>
+      <p class="lead">One dependency, one import. The same 4,489 tests, fewer microseconds.</p>
+      <div class="cta-actions">
+        <a class="btn btn-ink" href="/docs">Read the docs</a>
+        <a class="btn btn-ghost" href="https://github.com/4thel00z/notslowapi">View on GitHub</a>
+      </div>
+      <p class="cta-code"><code>uv add notslowapi[granian]</code></p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="wordmark" href="/">notslowapi</a>
+      <p>A fork of FastAPI made faster, measured layer by layer.</p>
+    </div>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="/docs">Docs</a>
+      <a href="#benchmarks">Benchmarks</a>
+      <a href="https://github.com/4thel00z/notslowapi">GitHub</a>
+      <a href="https://pypi.org/project/notslowapi/">PyPI</a>
+    </nav>
+    <p class="foot-legal">MIT (FastAPI) and BSD (vendored Starlette). notslowapi.com</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const marquee = document.getElementById('marquee');
+  const pauseButton = document.getElementById('marquee-pause');
+  let pinned = false;
+  let hovering = false;
+
+  const renderMarquee = () => {
+    marquee.dataset.paused = String(pinned || hovering);
+  };
+
+  pauseButton.addEventListener('click', () => {
+    pinned = !pinned;
+    pauseButton.setAttribute('aria-pressed', String(pinned));
+    pauseButton.textContent = pinned ? 'Play' : 'Pause';
+    renderMarquee();
+  });
+  marquee.addEventListener('pointerenter', () => { hovering = true; renderMarquee(); });
+  marquee.addEventListener('pointerleave', () => { hovering = false; renderMarquee(); });
+
+  const writeClipboard = (text) => {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+    return Promise.resolve();
+  };
+
+  document.querySelectorAll('[data-copy]').forEach((button) => {
+    const label = button.querySelector('.copy-text');
+    const idle = label.textContent;
+    let timer = 0;
+    button.addEventListener('click', () => {
+      writeClipboard(button.dataset.copy).then(() => {
+        button.dataset.state = 'copied';
+        label.textContent = 'Copied';
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          delete button.dataset.state;
+          label.textContent = idle;
+        }, 1600);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

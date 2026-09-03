@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notslowapi</title>
+<meta name="description" content="notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same 4,489 tests, drop-in.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ground: #fffef2;
+  --panel: #f3f2e7;
+  --ink: #191918;
+  --ink-2: #5f5e57;
+  --ink-3: #8b8a7e;
+  --amber: #fcaa2d;
+  --hair: #e3e2d8;
+  --sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "DM Mono", "SF Mono", Menlo, Consolas, monospace;
+  --wrap: 1180px;
+  --gutter: clamp(20px, 4vw, 40px);
+  --section: clamp(72px, 10vw, 136px);
+  --radius: 6px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+  font-feature-settings: "kern";
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 2px; }
+
+h1, h2, h3, p, ul, ol, table, pre, figure { margin: 0; }
+
+h1 {
+  font-size: clamp(2.75rem, 7vw, 5.5rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  max-width: 12ch;
+}
+
+h2 {
+  font-size: clamp(2rem, 3.8vw, 3.125rem);
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.05;
+  max-width: 18ch;
+}
+
+h3 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.lead {
+  font-size: clamp(1.125rem, 1.5vw, 1.3125rem);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 52ch;
+}
+
+.wrap {
+  width: min(var(--wrap), 100% - 2 * var(--gutter));
+  margin-inline: auto;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+.fig {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  display: grid;
+  grid-template-columns: 4.5em 1fr;
+  gap: 0 1em;
+  max-width: 62ch;
+}
+.fig b { font-weight: 500; color: var(--ink); }
+
+code, pre, .num, .no {
+  font-family: var(--mono);
+}
+
+pre {
+  background: var(--ink);
+  color: var(--ground);
+  padding: 20px 24px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: -0.005em;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  transition: background-color .18s ease, color .18s ease;
+}
+.btn:hover { text-decoration: none; background: var(--panel); }
+.btn.primary { background: var(--amber); border-color: var(--amber); }
+.btn.primary:hover { background: #f7a01a; border-color: #f7a01a; }
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--ground) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--hair);
+}
+.nav .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+.wordmark {
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+}
+.nav ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: clamp(18px, 3vw, 36px);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.hero {
+  padding-block: clamp(56px, 8vw, 112px) var(--section);
+}
+.hero .wrap {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: end;
+}
+.hero-copy { display: grid; gap: 28px; min-width: 0; }
+.hero-copy .lead { margin-top: -4px; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.install { display: grid; gap: 10px; margin-top: 12px; min-width: 0; }
+.install .fig { max-width: none; }
+
+.peaks { display: grid; gap: 14px; }
+.peaks svg { width: 100%; height: auto; display: block; }
+.peaks text { font-family: var(--mono); font-size: 12px; fill: var(--ink-2); }
+.peak {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: rise 1s cubic-bezier(.2,.7,.2,1) both;
+}
+.peak.b { animation-delay: .14s; }
+.peak.c { animation-delay: .28s; }
+@keyframes rise {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+section { border-top: 1px solid var(--hair); padding-block: var(--section); }
+
+.head {
+  display: grid;
+  gap: 18px;
+  margin-bottom: clamp(40px, 5vw, 64px);
+}
+
+.chart {
+  display: grid;
+  gap: 22px;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i {
+  width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+}
+.sw-fa { background: var(--ink-3); }
+.sw-nu { background: var(--ink); }
+.sw-ng { background: var(--amber); }
+
+.rows { display: grid; gap: 26px; }
+.grp {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.grp-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  padding-top: 12px;
+  line-height: 1.3;
+}
+.bars {
+  display: grid;
+  gap: 2px;
+  margin-right: 48px;
+  padding-block: 12px 12px;
+  background-image: linear-gradient(to right, var(--hair) 1px, transparent 1px);
+  background-size: 25% 100%;
+  border-right: 1px solid var(--hair);
+  position: relative;
+}
+.bar {
+  height: 14px;
+  width: calc(var(--w) * 1%);
+  border-radius: 0 4px 4px 0;
+  position: relative;
+}
+.bar.fa { background: var(--ink-3); }
+.bar.nu { background: var(--ink); }
+.bar.ng { background: var(--amber); }
+.bar span {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(8px, -50%);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.axis {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+}
+.axis div {
+  display: flex;
+  margin-right: 48px;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+.axis div span { transform: translateX(-50%); }
+.axis div span:first-child { transform: none; }
+.axis div span:last-child { transform: translateX(45%); }
+
+.scroll { overflow-x: auto; margin-top: clamp(40px, 5vw, 64px); }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 720px;
+  font-size: 0.9375rem;
+}
+thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-2);
+  padding: 0 16px 14px 0;
+  border-bottom: 1px solid var(--ink);
+  vertical-align: bottom;
+}
+tbody th {
+  text-align: left;
+  font-weight: 500;
+  padding: 18px 16px 18px 0;
+  border-bottom: 1px solid var(--hair);
+}
+td {
+  padding: 18px 16px 18px 0;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  vertical-align: top;
+}
+td small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+td.hi { background: var(--panel); padding-left: 16px; }
+thead th.hi { background: var(--panel); padding-left: 16px; }
+.table-fig { margin-top: 18px; }
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  margin-top: clamp(48px, 6vw, 80px);
+  background: var(--hair);
+  border: 1px solid var(--hair);
+}
+.tile {
+  background: var(--ground);
+  padding: 28px 28px 30px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.tile .val {
+  font-size: clamp(2.5rem, 3.6vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.tile p { font-size: 0.9375rem; color: var(--ink-2); line-height: 1.45; }
+
+.how .wrap {
+  display: grid;
+  grid-template-columns: 4fr 8fr;
+  gap: clamp(32px, 5vw, 80px);
+}
+.how-side {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  display: grid;
+  gap: 18px;
+}
+.how-side p.note {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+  max-width: 34ch;
+  padding-top: 8px;
+  border-top: 1px solid var(--hair);
+  margin-top: 8px;
+}
+.blocks { display: grid; gap: 14px; }
+.block {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: clamp(24px, 3vw, 36px);
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  gap: 8px 20px;
+}
+.block .no {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  padding-top: 5px;
+}
+.block h3 { grid-column: 2; }
+.block p { grid-column: 2; color: var(--ink-2); max-width: 54ch; }
+
+.method .cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.card {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: clamp(24px, 3vw, 36px);
+  display: grid;
+  gap: 40px;
+  align-content: space-between;
+  min-height: 260px;
+}
+.card p {
+  font-size: clamp(1.25rem, 1.7vw, 1.5rem);
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+.card .mono { color: var(--ink-3); }
+
+.steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.7fr;
+  gap: 14px;
+}
+.step {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  align-content: start;
+  padding-top: 20px;
+  border-top: 1px solid var(--ink);
+}
+.step .no { font-size: 0.8125rem; color: var(--ink-2); }
+.step p { color: var(--ink-2); font-size: 0.9375rem; }
+.step pre { font-size: 0.8125rem; padding: 14px 18px; }
+
+.deploy {
+  margin-top: 14px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: clamp(24px, 3vw, 36px);
+  display: grid;
+  gap: 24px;
+}
+.deploy p { color: var(--ink-2); max-width: 62ch; }
+.deploy p code {
+  font-size: 0.875rem;
+  background: var(--ground);
+  padding: 3px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.deploy > * { min-width: 0; }
+
+.faq .wrap { display: grid; grid-template-columns: 4fr 8fr; gap: clamp(32px, 5vw, 80px); }
+details { border-top: 1px solid var(--hair); }
+details:last-of-type { border-bottom: 1px solid var(--hair); }
+summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 22px 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after {
+  content: "";
+  width: 12px; height: 12px;
+  flex: none;
+  background:
+    linear-gradient(var(--ink), var(--ink)) center / 12px 1.5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center / 1.5px 12px no-repeat;
+  transition: transform .25s ease;
+}
+details[open] summary::after { transform: rotate(45deg); }
+details p { color: var(--ink-2); padding: 0 0 24px; max-width: 58ch; }
+
+footer { border-top: 1px solid var(--hair); padding-block: 48px 40px; }
+footer .wrap {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr;
+  gap: 32px;
+  align-items: start;
+}
+footer ul { list-style: none; padding: 0; display: grid; gap: 10px; font-size: 0.9375rem; }
+footer .mono { line-height: 1.6; }
+footer .brand { display: grid; gap: 10px; }
+footer .brand p { color: var(--ink-2); font-size: 0.9375rem; max-width: 30ch; }
+
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .7s ease, transform .7s ease;
+  transition-delay: var(--d, 0ms);
+}
+.js [data-reveal].in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .peak { animation: none; }
+  .js [data-reveal] { opacity: 1; transform: none; transition: none; }
+  summary::after, .btn { transition: none; }
+}
+
+@media (max-width: 960px) {
+  .hero .wrap { grid-template-columns: 1fr; align-items: start; }
+  .peaks { max-width: 620px; }
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .how .wrap, .faq .wrap { grid-template-columns: 1fr; }
+  .how-side { position: static; }
+  .method .cards { grid-template-columns: 1fr; }
+  .card { min-height: 0; gap: 24px; }
+  .steps { grid-template-columns: 1fr; }
+  footer .wrap { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .nav ul { gap: 16px; font-size: 0.875rem; }
+  .grp, .axis { grid-template-columns: 1fr; gap: 6px; }
+  .grp-label { padding-top: 0; }
+  .bars { padding-block: 8px 10px; }
+  .tiles { grid-template-columns: 1fr; }
+  .block { grid-template-columns: 1fr; }
+  .block h3, .block p { grid-column: 1; }
+  footer .wrap { grid-template-columns: 1fr; }
+  .fig { grid-template-columns: 1fr; gap: 2px; }
+  summary { font-size: 1.125rem; }
+  .btn { width: 100%; justify-content: center; }
+}
+</style>
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="wordmark" href="#top">notslowapi</a>
+    <nav aria-label="Primary">
+      <ul>
+        <li><a href="/docs">Docs</a></li>
+        <li><a href="#benchmarks">Benchmarks</a></li>
+        <li><a href="https://github.com/4thel00z/notslowapi">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<div class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <h1>FastAPI, minus the slow.</h1>
+      <p class="lead">notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same 4,489 tests, drop-in.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#switch">Switch in a minute</a>
+        <a class="btn" href="#benchmarks">See the benchmarks</a>
+      </div>
+      <div class="install">
+<pre><code>uv add notslowapi[granian]
+from notslowapi import FastAPI
+granian --interface asgi --workers 1 --loop uvloop myapp:app</code></pre>
+        <p class="fig"><b>fig 000</b><span>Install, change one import, serve.</span></p>
+      </div>
+    </div>
+
+    <figure class="peaks">
+      <svg viewBox="0 0 600 400" role="img" aria-label="Three peaks whose heights are 31.2, 17.1 and 8.7 microseconds per request on the plain JSON route.">
+        <line x1="0" y1="80" x2="600" y2="80" stroke="#e3e2d8" stroke-width="1"/>
+        <line x1="0" y1="215.6" x2="600" y2="215.6" stroke="#e3e2d8" stroke-width="1"/>
+        <line x1="0" y1="296.3" x2="600" y2="296.3" stroke="#e3e2d8" stroke-width="1"/>
+        <text x="0" y="74">31.2 µs</text>
+        <text x="0" y="209.6">17.1 µs</text>
+        <text x="0" y="290.3">8.7 µs</text>
+        <polygon class="peak a" points="40,380 220,80 400,380" fill="#8b8a7e"/>
+        <polygon class="peak b" points="230,380 380,215.6 530,380" fill="#191918"/>
+        <polygon class="peak c" points="380,380 490,296.3 600,380" fill="#fcaa2d"/>
+        <line x1="0" y1="380" x2="600" y2="380" stroke="#191918" stroke-width="1"/>
+      </svg>
+      <figcaption class="fig"><b>fig 001</b><span>Plain JSON route, microseconds per request, peaks drawn to scale. FastAPI 0.141 on uvicorn 31.2, notslowapi on uvicorn 17.1, notslowapi on granian 8.7.</span></figcaption>
+    </figure>
+  </div>
+</div>
+
+<section id="benchmarks" class="numbers">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <h2>Measured, not estimated.</h2>
+      <p class="lead">One core, Apple M3 Pro, Python 3.13, 64 keep-alive connections. Every figure is the median of three 5-second runs.</p>
+    </div>
+
+    <div class="chart" data-reveal>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw-fa"></i>FastAPI 0.141 on uvicorn</span>
+        <span><i class="sw-nu"></i>notslowapi on uvicorn</span>
+        <span><i class="sw-ng"></i>notslowapi on granian</span>
+      </div>
+
+      <div class="rows" role="img" aria-label="Bar chart of microseconds per request for four routes; the table below carries every value.">
+        <div class="grp">
+          <div class="grp-label">plain JSON route</div>
+          <div class="bars">
+            <div class="bar fa" style="--w:31.2" title="FastAPI 0.141 on uvicorn: 31.2 µs/req"><span>31.2</span></div>
+            <div class="bar nu" style="--w:17.1" title="notslowapi on uvicorn: 17.1 µs/req"></div>
+            <div class="bar ng" style="--w:8.7" title="notslowapi on granian: 8.7 µs/req"><span>8.7</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-label">int path + str query param</div>
+          <div class="bars">
+            <div class="bar fa" style="--w:57.0" title="FastAPI 0.141 on uvicorn: 57.0 µs/req"><span>57.0</span></div>
+            <div class="bar nu" style="--w:22.4" title="notslowapi on uvicorn: 22.4 µs/req"></div>
+            <div class="bar ng" style="--w:12.3" title="notslowapi on granian: 12.3 µs/req"><span>12.3</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-label">pydantic body + response_model</div>
+          <div class="bars">
+            <div class="bar fa" style="--w:52.1" title="FastAPI 0.141 on uvicorn: 52.1 µs/req"><span>52.1</span></div>
+            <div class="bar nu" style="--w:26.1" title="notslowapi on uvicorn: 26.1 µs/req"></div>
+            <div class="bar ng" style="--w:20.1" title="notslowapi on granian: 20.1 µs/req"><span>20.1</span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="grp-label">50 routes via include_router</div>
+          <div class="bars">
+            <div class="bar fa" style="--w:92.2" title="FastAPI 0.141 on uvicorn: 92.2 µs/req"><span>92.2</span></div>
+            <div class="bar nu" style="--w:26.3" title="notslowapi on uvicorn: 26.3 µs/req"></div>
+            <div class="bar ng" style="--w:17.3" title="notslowapi on granian: 17.3 µs/req"><span>17.3</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="axis" aria-hidden="true">
+        <div></div>
+        <div><span>0</span><span>25</span><span>50</span><span>75</span><span>100 µs</span></div>
+      </div>
+
+      <p class="fig"><b>fig 002</b><span>Microseconds per request, lower is better. FastAPI 0.141 on uvicorn against notslowapi on uvicorn and on granian.</span></p>
+    </div>
+
+    <div class="scroll" data-reveal>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">route</th>
+            <th scope="col">FastAPI 0.141 on uvicorn</th>
+            <th scope="col">notslowapi on uvicorn</th>
+            <th scope="col" class="hi">notslowapi on granian</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">plain JSON route</th>
+            <td>31.2 µs/req<small>32,000 req/s</small></td>
+            <td>17.1 µs/req<small>58,000 req/s</small></td>
+            <td class="hi">8.7 µs/req<small>114,000 req/s</small></td>
+          </tr>
+          <tr>
+            <th scope="row">int path + str query param</th>
+            <td>57.0 µs/req</td>
+            <td>22.4 µs/req</td>
+            <td class="hi">12.3 µs/req</td>
+          </tr>
+          <tr>
+            <th scope="row">pydantic body + response_model</th>
+            <td>52.1 µs/req</td>
+            <td>26.1 µs/req</td>
+            <td class="hi">20.1 µs/req</td>
+          </tr>
+          <tr>
+            <th scope="row">50 routes via include_router</th>
+            <td>92.2 µs/req</td>
+            <td>26.3 µs/req</td>
+            <td class="hi">17.3 µs/req</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fig table-fig" data-reveal><b>fig 003</b><span>The same runs in full. Requests per second were recorded on the plain JSON route.</span></p>
+
+    <div class="tiles">
+      <div class="tile" data-reveal>
+        <div class="val">3.6x</div>
+        <p>throughput per core on the plain JSON route: notslowapi on granian against FastAPI 0.141 on uvicorn.</p>
+      </div>
+      <div class="tile" data-reveal style="--d:80ms">
+        <div class="val">1.8x</div>
+        <p>on the plain JSON route with both on uvicorn.</p>
+      </div>
+      <div class="tile" data-reveal style="--d:160ms">
+        <div class="val">2.5x</div>
+        <p>on int path + str query param, both on uvicorn.</p>
+      </div>
+      <div class="tile" data-reveal style="--d:240ms">
+        <div class="val">3.5x</div>
+        <p>on 50 routes via include_router, both on uvicorn.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="how">
+  <div class="wrap">
+    <div class="how-side" data-reveal>
+      <p class="mono">No. 1 to No. 6</p>
+      <h2>How it got faster.</h2>
+      <p class="lead">Six changes, each measured before and after.</p>
+      <p class="note">Underneath, Starlette itself is vendored and tuned. Nothing is installed under the starlette name.</p>
+    </div>
+
+    <div class="blocks">
+      <article class="block" data-reveal>
+        <span class="no">No. 1</span>
+        <h3>Routes are matched once.</h3>
+        <p>Routes reached via include_router are matched once, not twice, and static paths are indexed.</p>
+      </article>
+      <article class="block" data-reveal>
+        <span class="no">No. 2</span>
+        <h3>Layers exist only when a route needs them.</h3>
+        <p>Per-request exit stacks and middleware layers are created only when a route needs them.</p>
+      </article>
+      <article class="block" data-reveal>
+        <span class="no">No. 3</span>
+        <h3>One exception layer, one frame.</h3>
+        <p>One exception-handling layer instead of three, and one frame from router to handler.</p>
+      </article>
+      <article class="block" data-reveal>
+        <span class="no">No. 4</span>
+        <h3>Parameters without introspection.</h3>
+        <p>Parameter extraction stopped introspecting type annotations on every request.</p>
+      </article>
+      <article class="block" data-reveal>
+        <span class="no">No. 5</span>
+        <h3>The solver skips work nobody asked for.</h3>
+        <p>The dependency solver skips work no endpoint asked for: the throwaway Response, unused query and cookie parsing.</p>
+      </article>
+      <article class="block" data-reveal>
+        <span class="no">No. 6</span>
+        <h3>Direct encoding and parsing.</h3>
+        <p>JSON encoding and query-string parsing go direct, without stdlib wrapper layers.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="method" class="method">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <h2>Every number has a before and an after.</h2>
+    </div>
+    <div class="cards">
+      <div class="card" data-reveal>
+        <p>Every change was measured before and after, on a ladder of ASGI rungs.</p>
+        <span class="mono">method</span>
+      </div>
+      <div class="card" data-reveal style="--d:80ms">
+        <p>Profiles come from native sampling with sample(1) and pyinstrument.</p>
+        <span class="mono">sample(1), pyinstrument</span>
+      </div>
+      <div class="card" data-reveal style="--d:160ms">
+        <p>Runs alternate after, before, after to reject noise. Numbers and profiles are committed to the repository.</p>
+        <span class="mono">bench/baseline</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="switch" class="switch">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <h2>Switch in a minute.</h2>
+      <p class="lead">Three steps. The third one is where the granian numbers come from.</p>
+    </div>
+    <div class="steps">
+      <div class="step" data-reveal>
+        <span class="no">1</span>
+        <h3>Install</h3>
+        <pre><code>uv add notslowapi[granian]</code></pre>
+        <p>Pulls notslowapi with the granian extra from PyPI.</p>
+      </div>
+      <div class="step" data-reveal style="--d:80ms">
+        <span class="no">2</span>
+        <h3>Change the import</h3>
+        <pre><code>from notslowapi import FastAPI</code></pre>
+        <p>Everything else stays as it is. The same 4,489 tests pass.</p>
+      </div>
+      <div class="step" data-reveal style="--d:160ms">
+        <span class="no">3</span>
+        <h3>Serve</h3>
+        <pre><code>granian --interface asgi --workers 1 --loop uvloop myapp:app</code></pre>
+        <p>One worker, uvloop as the event loop.</p>
+      </div>
+    </div>
+
+    <div id="deploy" class="deploy" data-reveal>
+      <div>
+        <h3>Deploy on granian.</h3>
+        <p style="margin-top:10px">Use granian. If you stay on uvicorn, pass <code>--no-proxy-headers</code> <code>--no-server-header</code> <code>--no-date-header</code>.</p>
+      </div>
+      <pre><code>uvicorn myapp:app --no-proxy-headers --no-server-header --no-date-header</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="faq">
+  <div class="wrap">
+    <div data-reveal>
+      <h2>Questions.</h2>
+    </div>
+    <div data-reveal>
+      <details>
+        <summary>Is it a drop-in replacement?</summary>
+        <p>Yes. The API is FastAPI's and the same 4,489 tests pass. Change the import and keep the rest of your code.</p>
+      </details>
+      <details>
+        <summary>What happens to Starlette?</summary>
+        <p>Starlette is vendored and tuned inside notslowapi; nothing is installed under the starlette name. Code that imports starlette.* directly gets upstream Starlette.</p>
+      </details>
+      <details>
+        <summary>Do the numbers hold across cores?</summary>
+        <p>The numbers on this page are single-core. Measuring multi-core scaling needs a separate client machine.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="brand">
+      <span class="wordmark">notslowapi</span>
+      <p>A fork of FastAPI made faster, measured layer by layer.</p>
+    </div>
+    <ul>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="#benchmarks">Benchmarks</a></li>
+      <li><a href="#how">How it got faster</a></li>
+    </ul>
+    <ul>
+      <li><a href="https://github.com/4thel00z/notslowapi">GitHub</a></li>
+      <li><a href="https://pypi.org/project/notslowapi/">PyPI</a></li>
+      <li><a href="https://notslowapi.com">notslowapi.com</a></li>
+    </ul>
+    <p class="mono">License MIT (FastAPI) and BSD (vendored Starlette).<br>Benchmarks: one core, Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of three 5 s runs.</p>
+  </div>
+</footer>
+
+<script>
+const reveal = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    entry.target.classList.add("in");
+    reveal.unobserve(entry.target);
+  }
+}, { rootMargin: "0px 0px -8% 0px" });
+document.querySelectorAll("[data-reveal]").forEach((el) => reveal.observe(el));
+</script>
+</body>
+</html>
