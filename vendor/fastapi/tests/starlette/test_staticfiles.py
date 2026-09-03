@@ -647,7 +647,7 @@ def test_staticfiles_self_symlinks(tmp_path: Path, test_client_factory: TestClie
 
 
 def test_staticfiles_relative_directory_symlinks(test_client_factory: TestClientFactory) -> None:
-    app = StaticFiles(directory="tests/statics", follow_symlink=True)
+    app = StaticFiles(directory="tests/starlette/statics", follow_symlink=True)
     client = test_client_factory(app)
     response = client.get("/example.txt")
     assert response.status_code == 200

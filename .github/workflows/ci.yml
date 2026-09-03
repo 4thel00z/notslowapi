@@ -24,11 +24,11 @@ jobs:
       - name: Lint vendored Starlette
         run: uv run ruff check --config vendor/fastapi/scripts/ruff-starlette.toml vendor/fastapi/notslowapi/starlette vendor/fastapi/tests/starlette
       - name: Test
+        working-directory: vendor/fastapi
         run: >
-          uv run pytest -c vendor/fastapi/pyproject.toml --rootdir vendor/fastapi vendor/fastapi/tests
-          --ignore=vendor/fastapi/tests/benchmarks --ignore=vendor/fastapi/tests/memory_benchmarks
-          --deselect vendor/fastapi/tests/test_fastapi_cli.py::test_fastapi_cli
-          --ignore=vendor/fastapi/tests/test_tutorial/test_graphql
-          --ignore=vendor/fastapi/tests/starlette/middleware/test_opentelemetry.py
+          uv run --project ../.. pytest tests
+          --ignore=tests/benchmarks --ignore=tests/memory_benchmarks
+          --deselect tests/test_fastapi_cli.py::test_fastapi_cli
+          --ignore=tests/test_tutorial/test_graphql
+          --ignore=tests/starlette/middleware/test_opentelemetry.py
           -n auto -q -p no:cacheprovider
-        working-directory: .
