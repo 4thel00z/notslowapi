@@ -55,6 +55,8 @@ class Result:
     rps: list[float] = field(default_factory=list)
     p50_us: list[float] = field(default_factory=list)
     p99_us: list[float] = field(default_factory=list)
+    cpu_s: list[float] = field(default_factory=list)
+    requests: list[int] = field(default_factory=list)
 
     @property
     def rps_median(self) -> float:
@@ -63,6 +65,11 @@ class Result:
     @property
     def us_per_request(self) -> float:
         return 1_000_000 / self.rps_median
+
+    @property
+    def cpu_us_per_request(self) -> float:
+        """Server CPU time per request; wall-clock load on the machine barely moves it."""
+        return statistics.median(1_000_000 * cpu / n for cpu, n in zip(self.cpu_s, self.requests))
 
 
 UVICORN_TUNED = ("--no-proxy-headers", "--no-server-header", "--no-date-header")
@@ -223,13 +230,47 @@ def oha(rung: Rung, duration: str, concurrency: int) -> dict:
     return json.loads(completed.stdout)
 
 
-def record(result: Result, report: dict) -> None:
+def record(result: Result, report: dict, cpu_s: float) -> None:
     summary = report["summary"]
     if summary["successRate"] < 1.0:
         raise RuntimeError(f"{result.rung.label}: success rate {summary['successRate']}")
     result.rps.append(summary["requestsPerSec"])
     result.p50_us.append(report["latencyPercentiles"]["p50"] * 1_000_000)
     result.p99_us.append(report["latencyPercentiles"]["p99"] * 1_000_000)
+    result.cpu_s.append(cpu_s)
+    result.requests.append(sum(report["statusCodeDistribution"].values()))
+
+
+def parse_cputime(text: str) -> float:
+    """ps cputime: [[DD-]HH:]MM:SS.hh"""
+    days = 0.0
+    if "-" in text:
+        day_text, text = text.split("-", 1)
+        days = float(day_text)
+    parts = [float(part) for part in text.split(":")]
+    seconds = 0.0
+    for part in parts:
+        seconds = seconds * 60 + part
+    return days * 86400 + seconds
+
+
+def process_tree(pid: int) -> list[int]:
+    children = subprocess.run(
+        ["pgrep", "-P", str(pid)], capture_output=True, text=True, check=False
+    ).stdout.split()
+    pids = [pid]
+    for child in children:
+        pids.extend(process_tree(int(child)))
+    return pids
+
+
+def cpu_seconds(pid: int) -> float:
+    """User plus system CPU time of the server process and its workers."""
+    pids = ",".join(str(p) for p in process_tree(pid))
+    out = subprocess.run(
+        ["ps", "-o", "cputime=", "-p", pids], capture_output=True, text=True, check=True
+    ).stdout
+    return sum(parse_cputime(line.strip()) for line in out.splitlines() if line.strip())
 
 
 def sample_native(pid: int, name: str, seconds: int) -> subprocess.Popen[bytes]:
@@ -248,7 +289,9 @@ def measure(rung: Rung, repeats: int, duration: str, concurrency: int, native: b
     try:
         oha(rung, "2s", concurrency)
         for _ in range(repeats):
-            record(result, oha(rung, duration, concurrency))
+            cpu_before = cpu_seconds(proc.pid)
+            report = oha(rung, duration, concurrency)
+            record(result, report, cpu_seconds(proc.pid) - cpu_before)
         if not native:
             return result
         sampler = sample_native(proc.pid, rung.label, 8)
@@ -270,12 +313,15 @@ def profile(rung: Rung, duration: str, concurrency: int) -> None:
 def print_table(results: list[Result]) -> None:
     base = results[0].us_per_request
     print()
-    print(f"{'rung':34} {'rps':>10} {'us/req':>9} {'vs l0':>9} {'p50 us':>9} {'p99 us':>9}")
+    print(
+        f"{'rung':34} {'rps':>10} {'us/req':>9} {'vs l0':>9} {'cpu us':>9} "
+        f"{'p50 us':>9} {'p99 us':>9}"
+    )
     for r in results:
         print(
             f"{r.rung.label:34} {r.rps_median:10.0f} {r.us_per_request:9.1f} "
-            f"{r.us_per_request - base:+9.1f} {statistics.median(r.p50_us):9.0f} "
-            f"{statistics.median(r.p99_us):9.0f}"
+            f"{r.us_per_request - base:+9.1f} {r.cpu_us_per_request:9.1f} "
+            f"{statistics.median(r.p50_us):9.0f} {statistics.median(r.p99_us):9.0f}"
         )
     print()
 
@@ -300,6 +346,9 @@ def main() -> None:
                     "p50_us": r.p50_us,
                     "p99_us": r.p99_us,
                     "us_per_request": r.us_per_request,
+                    "cpu_s": r.cpu_s,
+                    "requests": r.requests,
+                    "cpu_us_per_request": r.cpu_us_per_request,
                 }
                 for r in results
             ],
