@@ -63,6 +63,7 @@ from notslowapi.dependencies.models import (
     _UsesScopesCache,
     dependant_cache_key,
     dependant_call_kinds,
+    dependant_is_leaf,
     dependant_needs_response,
 )
 from notslowapi.exceptions import DependencyScopeError
@@ -638,22 +639,39 @@ async def solve_dependencies(
                 scope=sub_dependant.scope,
             )
 
-        solved_result = await solve_dependencies(
-            request=request,
-            dependant=use_sub_dependant,
-            body=body,
-            background_tasks=background_tasks,
-            response=response,
-            dependency_overrides_provider=dependency_overrides_provider,
-            dependency_cache=dependency_cache,
-            async_exit_stack=async_exit_stack,
-            embed_body_fields=embed_body_fields,
-            _uses_scopes_cache=_uses_scopes_cache,
-        )
-        background_tasks = solved_result.background_tasks
-        if solved_result.errors:
-            errors.extend(solved_result.errors)
-            continue
+        if not overrides and dependant_is_leaf(sub_dependant):
+            sub_plan = dependant_param_plan(sub_dependant)
+            if sub_plan.specs:
+                sub_values, sub_errors = extract_params(
+                    sub_plan.specs,
+                    request.path_params if sub_plan.needs_path else None,
+                    request.query_params if sub_plan.needs_query else None,
+                    request.headers if sub_plan.needs_headers else None,
+                    request.cookies if sub_plan.needs_cookies else None,
+                )
+                if sub_errors:
+                    errors.extend(sub_errors)
+                    continue
+            else:
+                sub_values = {}
+        else:
+            solved_result = await solve_dependencies(
+                request=request,
+                dependant=use_sub_dependant,
+                body=body,
+                background_tasks=background_tasks,
+                response=response,
+                dependency_overrides_provider=dependency_overrides_provider,
+                dependency_cache=dependency_cache,
+                async_exit_stack=async_exit_stack,
+                embed_body_fields=embed_body_fields,
+                _uses_scopes_cache=_uses_scopes_cache,
+            )
+            background_tasks = solved_result.background_tasks
+            if solved_result.errors:
+                errors.extend(solved_result.errors)
+                continue
+            sub_values = solved_result.values
         sub_dependant_cache_key = dependant_cache_key(sub_dependant)
         if sub_dependant.use_cache and sub_dependant_cache_key in dependency_cache:
             solved = dependency_cache[sub_dependant_cache_key]
@@ -672,12 +690,12 @@ async def solve_dependencies(
                 solved = await _solve_generator(
                     dependant=use_sub_dependant,
                     stack=use_astack,
-                    sub_values=solved_result.values,
+                    sub_values=sub_values,
                 )
             elif is_coroutine:
-                solved = await call(**solved_result.values)
+                solved = await call(**sub_values)
             else:
-                solved = await run_in_threadpool(call, **solved_result.values)
+                solved = await run_in_threadpool(call, **sub_values)
         if sub_dependant.name is not None:
             values[sub_dependant.name] = solved
         if sub_dependant_cache_key not in dependency_cache:
