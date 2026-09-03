@@ -53,6 +53,12 @@ Every route was matched in order; an index per routes version now maps each stat
 
 The last commit moves the modified Starlette into the package as `notslowapi.starlette` and drops the PyPI `starlette` dependency; ladder check afterwards: l2 17.8 and l3 22.3 against 17.1 and 22.4, within noise.
 
+## JSON body validated from bytes
+
+A route whose only parameter is one JSON body read the body, built `Headers` to find the content type, ran `json.loads`, then had the solver validate the dict with `validate_python`. Such routes now get a handler that reads the content type from the raw ASGI headers and hands the bytes to pydantic-core's JSON validator in one pass, skipping the solver. Empty, `null`, non-JSON and invalid bodies, and any validation error, go through the upstream handler so the responses stay identical; strict models are the one documented difference (see [Compatibility](compatibility.md)).
+
+- l4_fastapi_model: 26.7 → 22.1 (37.4k → 45.4k req/s); on granian 21.4 → 15.7 (46.6k → 64.1k req/s)
+
 ## What did not change
 
 The public API: each commit's probe (routing, included routers, `yield` dependencies, exceptions around response start, forms, response types) is identical before and after. The OpenAPI path list. The test suite: the same FastAPI and Starlette tests pass before and after every change, 4,493 today.

@@ -148,13 +148,17 @@ def json_bytes_response(content: bytes, status_code: int, background: Any) -> Re
 
 def dependant_is_trivial(dependant: Dependant) -> bool:
     """True when solving the dependant can only ever produce no values and no errors."""
+    return not dependant.body_params and dependant_solves_only_body(dependant)
+
+
+def dependant_solves_only_body(dependant: Dependant) -> bool:
+    """True when the body params are the only values solving the dependant can produce."""
     return not (
         dependant.dependencies
         or dependant.path_params
         or dependant.query_params
         or dependant.header_params
         or dependant.cookie_params
-        or dependant.body_params
         or dependant.request_param_name
         or dependant.http_connection_param_name
         or dependant.websocket_param_name
@@ -406,6 +410,22 @@ def is_json_content_type(value: str) -> bool:
     if not separator or maintype != "application":
         return False
     return subtype == "json" or subtype.endswith("+json")
+
+
+def scope_declares_json_body(scope: Scope, strict_content_type: bool) -> bool:
+    """The request handler's content-type decision, read from the raw ASGI headers.
+
+    Same result as Headers.get("content-type") followed by is_json_content_type,
+    without building the Headers object: the first content-type header wins and
+    a missing or empty one means JSON unless strict_content_type is set.
+    """
+    for name, value in scope["headers"]:
+        if name != b"content-type":
+            continue
+        if not value:
+            return not strict_content_type
+        return is_json_content_type(value.decode("latin-1"))
+    return not strict_content_type
 
 
 def serialize_validated(
@@ -1042,7 +1062,80 @@ def get_request_handler(
         assert response
         return response
 
-    return app
+    single_json_body = (
+        body_field is not None
+        and not is_body_form
+        and not is_sse_stream
+        and not is_json_stream
+        and not is_generator
+        and not embed_body_fields
+        and len(dependant.body_params) == 1
+        and dependant_solves_only_body(dependant)
+    )
+    if not single_json_body:
+        return app
+
+    body_param = dependant.body_params[0]
+
+    async def json_body_app(request: Request) -> Response:
+        """The body is the only parameter: validate the raw bytes in one pydantic pass.
+
+        Anything the fast path cannot decide identically (empty body, non-JSON
+        content type, JSON null, invalid JSON, validation errors) goes through
+        the general handler above, which reads the cached body again.
+        """
+        try:
+            body_bytes = await request.body()
+        except HTTPException:
+            raise
+        except Exception as e:
+            http_error = HTTPException(
+                status_code=400, detail="There was an error parsing the body"
+            )
+            raise http_error from e
+        if not body_bytes or not scope_declares_json_body(
+            request.scope, actual_strict_content_type
+        ):
+            return await app(request)
+        value = body_param.validate_json(body_bytes)
+        if value is Undefined or value is None:
+            return await app(request)
+        if is_coroutine:
+            raw_response = await call(**{body_param.name: value})
+        else:
+            raw_response = await run_in_threadpool(call, **{body_param.name: value})
+        if isinstance(raw_response, Response):
+            return raw_response
+        if is_coroutine:
+            content = serialize_response_sync(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
+        else:
+            content = await serialize_response(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                is_coroutine=is_coroutine,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
+        return build_response(content, trivial_solved)
+
+    return json_body_app
 
 
 def get_websocket_app(
