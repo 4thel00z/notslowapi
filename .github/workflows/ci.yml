@@ -18,7 +18,7 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
       - name: Sync
-        run: uv sync --group test
+        run: uv sync --group test --group lint
       - name: Lint notslowapi
         run: uv run ruff check vendor/fastapi/notslowapi vendor/fastapi/tests vendor/fastapi/docs_src
       - name: Lint vendored Starlette

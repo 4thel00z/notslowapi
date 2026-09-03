@@ -17,6 +17,9 @@ package = false
 bench = [
     "granian>=2.0",
 ]
+lint = [
+    "ruff>=0.14.14,<0.16.0",
+]
 test = [
     "pytest>=9.0.0",
     "pytest-timeout>=2.4.0",
