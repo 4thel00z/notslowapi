@@ -851,19 +851,16 @@ def request_params_to_args(
         return values, errors
 
     first_field = fields[0]
-    if len(fields) == 1 and lenient_issubclass(
-        first_field.field_info.annotation, BaseModel
-    ):
+    if len(fields) == 1 and first_field.is_model:
         return request_params_to_model_arg(first_field, received_params)
 
     for field in fields:
-        alias = get_validation_alias(field)
+        alias = field.alias_for_validation
         value = _get_multidict_value(field, received_params, alias=alias)
-        field_info = field.field_info
-        assert isinstance(field_info, params.Param), (
-            "Params must be subclasses of Param"
-        )
-        loc = (field_info.in_.value, alias)
+        location = field.param_location
+        if location is None:
+            raise TypeError("Params must be subclasses of Param")
+        loc = (location, alias)
         v_, errors_ = _validate_value_with_model_field(
             field=field, value=value, values=values, loc=loc
         )
@@ -1057,5 +1054,4 @@ def _get_body_field(
 
 
 def get_validation_alias(field: ModelField) -> str:
-    va = getattr(field, "validation_alias", None)
-    return va or field.alias
+    return field.alias_for_validation

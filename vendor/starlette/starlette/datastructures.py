@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import ItemsView, Iterable, Iterator, KeysView, Mapping, MutableMapping, Sequence, ValuesView
 from shlex import shlex
 from typing import Any, BinaryIO, Literal, NamedTuple, TypeVar, cast
-from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
+from urllib.parse import SplitResult, parse_qsl, unquote, urlencode, urlsplit
 
 from starlette._utils import parse_host_header
 from starlette.concurrency import run_in_threadpool
@@ -375,6 +375,21 @@ class MultiDict(ImmutableMultiDict[Any, Any]):
         self._dict.update(value)
 
 
+def parse_query_string(query: str) -> list[tuple[str, str]]:
+    """parse_qsl(query, keep_blank_values=True): split on '&', '+' to space, percent-decode as utf-8 with replace."""
+    items: list[tuple[str, str]] = []
+    for pair in query.split("&"):
+        if not pair:
+            continue
+        name, _, value = pair.partition("=")
+        if "+" in name or "%" in name:
+            name = unquote(name.replace("+", " "))
+        if "+" in value or "%" in value:
+            value = unquote(value.replace("+", " "))
+        items.append((name, value))
+    return items
+
+
 class QueryParams(ImmutableMultiDict[str, str]):
     """
     An immutable multidict.
@@ -389,6 +404,13 @@ class QueryParams(ImmutableMultiDict[str, str]):
 
         value = args[0] if args else []
 
+        if not kwargs and isinstance(value, (str, bytes)):
+            if isinstance(value, bytes):
+                value = value.decode("latin-1")
+            items = parse_query_string(value)
+            self._list = items
+            self._dict = dict(items)
+            return
         if isinstance(value, str):
             super().__init__(parse_qsl(value, keep_blank_values=True), **kwargs)
         elif isinstance(value, bytes):

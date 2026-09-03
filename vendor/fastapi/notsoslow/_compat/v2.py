@@ -167,6 +167,12 @@ class ModelField:
         self.is_sequence: bool = shared.field_annotation_is_sequence(
             self.field_info.annotation
         )
+        self.alias_for_validation: str = self.validation_alias or self.alias
+        self.is_model: bool = shared.lenient_issubclass(
+            self.field_info.annotation, BaseModel
+        )
+        in_ = getattr(self.field_info, "in_", None)
+        self.param_location: str | None = in_.value if in_ is not None else None
 
     def get_default(self) -> Any:
         if self.field_info.is_required():
