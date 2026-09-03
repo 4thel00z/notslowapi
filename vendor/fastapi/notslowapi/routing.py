@@ -268,20 +268,33 @@ class TrivialHandlerParts:
 
     get_request_handler attaches this to the handler it returns for such endpoints;
     route_app then builds the response in the request wrapper's own frame instead of
-    awaiting the handler.
+    awaiting the handler. With a response field and the default response class,
+    serialize returns the JSON bytes and the wrapper sends them itself with the
+    precomputed status and header decisions; otherwise respond builds the Response.
     """
 
     call: Callable[..., Awaitable[Any]]
-    respond: Callable[[Any, Request], Response]
+    respond: Callable[[Any, Scope], Response]
+    serialize: Callable[[Any, Scope], bytes] | None
+    status_code: int
+    body_allowed: bool
+    with_content_length: bool
 
 
 def trivial_route_app(parts: TrivialHandlerParts) -> ASGIApp:
-    """trivial_request_response with the handler inlined: one coroutine from scope to send."""
+    """trivial_request_response with the handler inlined: one coroutine from scope to send.
+
+    The Request object is only built when an exception needs it; a serialized JSON
+    body goes out as the same two ASGI messages Response.__call__ would send.
+    """
     call = parts.call
     respond = parts.respond
+    serialize = parts.serialize
+    status_code = parts.status_code
+    body_allowed = parts.body_allowed
+    with_content_length = parts.with_content_length
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        request = Request(scope, receive, send)
         tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
         if tracker is None:
             tracker = [False]
@@ -292,13 +305,33 @@ def trivial_route_app(parts: TrivialHandlerParts) -> ASGIApp:
         try:
             raw_response = await call()
             if isinstance(raw_response, Response):
-                response = raw_response
+                await raw_response(scope, receive, sender)
+                return
+            if serialize is None:
+                await respond(raw_response, scope)(scope, receive, sender)
+                return
+            body = serialize(raw_response, scope)
+            if not body_allowed:
+                body = b""
+            if with_content_length:
+                headers = [
+                    (b"content-length", b"%d" % len(body)),
+                    JSON_CONTENT_TYPE_HEADER,
+                ]
             else:
-                response = respond(raw_response, request)
-            await response(scope, receive, sender)
+                headers = [JSON_CONTENT_TYPE_HEADER]
+            tracker[0] = True
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": status_code,
+                    "headers": headers,
+                }
+            )
+            await send({"type": "http.response.body", "body": body})
         except Exception as exc:
             await send_route_exception_response(
-                exc, request, scope, receive, sender, tracker
+                exc, Request(scope, receive, send), scope, receive, sender, tracker
             )
 
     return app
@@ -659,7 +692,7 @@ def get_request_handler(
         response_class, DefaultPlaceholder
     )
 
-    def endpoint_context(request: Request) -> EndpointContext:
+    def endpoint_context_for_scope(scope: Scope) -> EndpointContext:
         endpoint_ctx = (
             _extract_endpoint_context(dependant.call)
             if dependant.call
@@ -667,9 +700,12 @@ def get_request_handler(
         )
         if dependant.path:
             # For mounted sub-apps, include the mount path prefix
-            mount_path = request.scope.get("root_path", "").rstrip("/")
-            endpoint_ctx["path"] = f"{request.method} {mount_path}{dependant.path}"
+            mount_path = scope.get("root_path", "").rstrip("/")
+            endpoint_ctx["path"] = f"{scope['method']} {mount_path}{dependant.path}"
         return endpoint_ctx
+
+    def endpoint_context(request: Request) -> EndpointContext:
+        return endpoint_context_for_scope(request.scope)
 
     def build_response(content: Any, solved_result: SolvedDependency) -> Response:
         response_args = _build_response_args(
@@ -731,7 +767,7 @@ def get_request_handler(
 
     if is_coroutine:
 
-        def respond_trivial(raw_response: Any, request: Request) -> Response:
+        def respond_trivial(raw_response: Any, scope: Scope) -> Response:
             content = serialize_response_sync(
                 field=response_field,
                 response_content=raw_response,
@@ -742,12 +778,60 @@ def get_request_handler(
                 exclude_defaults=response_model_exclude_defaults,
                 exclude_none=response_model_exclude_none,
                 dump_json=use_dump_json,
-                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+                endpoint_ctx_factory=functools.partial(
+                    endpoint_context_for_scope, scope
+                ),
             )
             return build_response(content, trivial_solved)
 
+        serialize_trivial: Callable[[Any, Scope], bytes] | None = None
+        if response_field is not None and use_dump_json:
+            trivial_field = response_field
+
+            def serialize_trivial(raw_response: Any, scope: Scope) -> bytes:
+                value, errors = trivial_field.validate(
+                    raw_response, {}, loc=("response",)
+                )
+                if errors:
+                    return serialize_validated(
+                        trivial_field,
+                        value,
+                        errors,
+                        response_content=raw_response,
+                        include=response_model_include,
+                        exclude=response_model_exclude,
+                        by_alias=response_model_by_alias,
+                        exclude_unset=response_model_exclude_unset,
+                        exclude_defaults=response_model_exclude_defaults,
+                        exclude_none=response_model_exclude_none,
+                        endpoint_ctx=None,
+                        dump_json=True,
+                        endpoint_ctx_factory=functools.partial(
+                            endpoint_context_for_scope, scope
+                        ),
+                    )
+                return trivial_field.serialize_json(
+                    value,
+                    include=response_model_include,
+                    exclude=response_model_exclude,
+                    by_alias=response_model_by_alias,
+                    exclude_unset=response_model_exclude_unset,
+                    exclude_defaults=response_model_exclude_defaults,
+                    exclude_none=response_model_exclude_none,
+                )
+
+        trivial_status = _build_response_args(
+            status_code=status_code, solved_result=trivial_solved
+        ).get("status_code", 200)
         trivial_app.parts = TrivialHandlerParts(  # type: ignore[attr-defined]
-            call=call, respond=respond_trivial
+            call=call,
+            respond=respond_trivial,
+            serialize=serialize_trivial,
+            status_code=trivial_status,
+            body_allowed=is_body_allowed_for_status_code(trivial_status),
+            with_content_length=not (
+                trivial_status < 200 or trivial_status in (204, 304)
+            ),
         )
 
     async def plain_app(request: Request) -> Response:
