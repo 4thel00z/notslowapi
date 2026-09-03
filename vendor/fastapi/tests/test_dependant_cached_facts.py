@@ -110,3 +110,65 @@ def test_fresh_dependant_computes_lazily() -> None:
     assert dependant.needs_response is None
     assert dependant_call_kinds(dependant) == (False, True)
     assert dependant.call_kinds == (False, True)
+
+
+from notslowapi.dependencies.models import dependant_is_leaf  # noqa: E402
+
+
+def test_leaf_classification() -> None:
+    dependant = route_for("/items/{item_id}").dependant
+    leaves = {sub.name: dependant_is_leaf(sub) for sub in dependant.dependencies}
+    assert leaves == {"page": True, "user": True}
+    assert dependant_is_leaf(route_for("/stamped").dependant.dependencies[0]) is False
+    assert dependant_is_leaf(route_for("/gen").dependant.dependencies[0]) is True
+
+
+leaf_app = FastAPI()
+leaf_calls: list[str] = []
+
+
+def shared_leaf(tag: str = "none") -> str:
+    leaf_calls.append(tag)
+    return tag
+
+
+def uncached_leaf(n: int = 1) -> int:
+    leaf_calls.append(f"uncached-{n}")
+    return n
+
+
+async def parent(shared: Annotated[str, Depends(shared_leaf)]) -> str:
+    return f"parent:{shared}"
+
+
+@leaf_app.get("/leaves")
+async def leaves(
+    shared: Annotated[str, Depends(shared_leaf)],
+    via_parent: Annotated[str, Depends(parent)],
+    first: Annotated[int, Depends(uncached_leaf, use_cache=False)],
+    second: Annotated[int, Depends(uncached_leaf, use_cache=False)],
+) -> dict[str, Any]:
+    return {
+        "shared": shared,
+        "via_parent": via_parent,
+        "first": first,
+        "second": second,
+    }
+
+
+leaf_client = TestClient(leaf_app)
+
+
+def test_inlined_leaves_keep_caching_and_error_semantics() -> None:
+    leaf_calls.clear()
+    response = leaf_client.get("/leaves?tag=x&n=2")
+    assert response.json() == {
+        "shared": "x",
+        "via_parent": "parent:x",
+        "first": 2,
+        "second": 2,
+    }
+    assert leaf_calls == ["x", "uncached-2", "uncached-2"]
+    bad = leaf_client.get("/leaves?n=abc")
+    assert bad.status_code == 422
+    assert [e["loc"] for e in bad.json()["detail"]] == [["query", "n"], ["query", "n"]]

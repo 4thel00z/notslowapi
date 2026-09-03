@@ -59,6 +59,7 @@ class Dependant:
         default=None, init=False, repr=False, compare=False
     )
     param_plan: Any = field(default=None, init=False, repr=False, compare=False)
+    is_leaf: bool | None = field(default=None, init=False, repr=False, compare=False)
 
 
 _UsesScopesCache = dict[int, tuple[Dependant, bool]]
@@ -262,6 +263,28 @@ def dependant_call_kinds(dependant: Dependant) -> tuple[bool, bool]:
             _is_coroutine_callable(call),
         )
     return kinds
+
+
+def dependant_is_leaf(dependant: Dependant) -> bool:
+    """Whether solving the dependant needs only its own path, query, header and cookie params.
+
+    A leaf has no sub-dependencies, no body params and none of the request, response,
+    background-tasks or security-scopes parameters, so its parent can extract its params
+    and call it without a recursive solve_dependencies.
+    """
+    leaf = dependant.is_leaf
+    if leaf is None:
+        leaf = dependant.is_leaf = not (
+            dependant.dependencies
+            or dependant.body_params
+            or dependant.request_param_name
+            or dependant.http_connection_param_name
+            or dependant.websocket_param_name
+            or dependant.response_param_name
+            or dependant.background_tasks_param_name
+            or dependant.security_scopes_param_name
+        )
+    return leaf
 
 
 def dependant_needs_response(dependant: Dependant) -> bool:
