@@ -1,9 +1,10 @@
 from typing import Any
 
-from notslowapi import FastAPI, HTTPException, Request, Response
+from notslowapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from notslowapi.responses import JSONResponse, PlainTextResponse
 from notslowapi.routing import (
     APIRoute,
+    PlainHandlerParts,
     TrivialHandlerParts,
     route_app,
 )
@@ -84,7 +85,10 @@ def test_coroutine_endpoints_without_parameters_get_the_merged_app() -> None:
 
 def test_sync_and_parameter_endpoints_keep_the_two_frame_app() -> None:
     assert not hasattr(route_for("/sync").get_route_handler(), "parts")
-    assert not hasattr(route_for("/items/{item_id}").get_route_handler(), "parts")
+    assert isinstance(
+        getattr(route_for("/items/{item_id}").get_route_handler(), "parts", None),
+        PlainHandlerParts,
+    )
     assert (
         route_for("/sync").app.__qualname__ == "trivial_request_response.<locals>.app"
     )
@@ -301,6 +305,122 @@ def test_direct_send_emits_the_same_messages_as_a_response() -> None:
     async def run_reference() -> None:
         response = Response(body, media_type="application/json")
         await response({"type": "http"}, None, reference_send)  # type: ignore[arg-type]
+
+    anyio.run(run_reference)
+    assert direct == reference
+
+
+plain_app = FastAPI()
+plain_tasks: list[str] = []
+
+
+@plain_app.get("/items/{item_id}")
+async def plain_item(item_id: int, q: str | None = None) -> dict[str, Any]:
+    return {"item_id": item_id, "q": q}
+
+
+@plain_app.get("/typed/{item_id}")
+async def plain_typed(item_id: int) -> Item:
+    return Item(name=f"item-{item_id}", price=float(item_id))
+
+
+@plain_app.get("/with-response/{item_id}")
+async def plain_with_response(item_id: int, response: Response) -> dict[str, int]:
+    response.headers["x-item"] = str(item_id)
+    response.status_code = 202
+    return {"item_id": item_id}
+
+
+@plain_app.get("/with-tasks/{name}")
+async def plain_with_tasks(name: str, tasks: BackgroundTasks) -> dict[str, str]:
+    tasks.add_task(plain_tasks.append, name)
+    return {"name": name}
+
+
+@plain_app.get("/sync/{item_id}")
+def plain_sync(item_id: int) -> dict[str, int]:
+    return {"item_id": item_id}
+
+
+plain_client = TestClient(plain_app)
+
+
+def plain_route(path: str) -> APIRoute:
+    return next(
+        r for r in plain_app.routes if isinstance(r, APIRoute) and r.path == path
+    )
+
+
+def test_parameter_endpoints_get_the_plain_route_app() -> None:
+    handler = plain_route("/items/{item_id}").get_route_handler()
+    assert isinstance(getattr(handler, "parts", None), PlainHandlerParts)
+    assert (
+        plain_route("/items/{item_id}").app.__qualname__
+        == "plain_route_app.<locals>.app"
+    )
+    assert (
+        plain_route("/sync/{item_id}").app.__qualname__
+        == "trivial_request_response.<locals>.app"
+    )
+
+
+def test_plain_route_app_solves_validates_and_serializes() -> None:
+    assert plain_client.get("/items/3?q=x").json() == {"item_id": 3, "q": "x"}
+    assert plain_client.get("/typed/2").json() == {"name": "item-2", "price": 2.0}
+    response = plain_client.get("/items/abc")
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["path", "item_id"]
+    assert plain_client.get("/sync/5").json() == {"item_id": 5}
+
+
+def test_plain_route_app_keeps_response_and_background_parameters() -> None:
+    response = plain_client.get("/with-response/9")
+    assert response.status_code == 202
+    assert response.headers["x-item"] == "9"
+    assert response.json() == {"item_id": 9}
+    assert plain_client.get("/with-tasks/job").json() == {"name": "job"}
+    assert plain_tasks == ["job"]
+
+
+def test_plain_direct_send_emits_the_same_messages_as_a_response() -> None:
+    import anyio
+
+    async def collect() -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = []
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/typed/4",
+            "raw_path": b"/typed/4",
+            "query_string": b"",
+            "headers": [],
+            "root_path": "",
+            "scheme": "http",
+            "server": ("testserver", 80),
+            "client": ("testclient", 1),
+            "http_version": "1.1",
+        }
+
+        async def receive() -> dict[str, Any]:
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message: dict[str, Any]) -> None:
+            messages.append(message)
+
+        await plain_app(scope, receive, send)
+        return messages
+
+    direct = anyio.run(collect)
+    body = Item(name="item-4", price=4.0).model_dump_json().encode()
+    reference: list[dict[str, Any]] = []
+
+    async def reference_send(message: dict[str, Any]) -> None:
+        reference.append(message)
+
+    async def run_reference() -> None:
+        await Response(body, media_type="application/json")(
+            {"type": "http"}, None, reference_send
+        )  # type: ignore[arg-type]
 
     anyio.run(run_reference)
     assert direct == reference
