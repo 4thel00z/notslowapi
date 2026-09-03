@@ -23,6 +23,7 @@ class Rung:
     url: str
     method: str = "GET"
     body: str | None = None
+    headers: tuple[str, ...] = ()
     loop: str = "uvloop"
     http: str = "httptools"
     gc_freeze: bool = False
@@ -85,6 +86,7 @@ LADDER: list[Rung] = [
     Rung("l5_fastapi_50routes", f"{BASE}/r39"),
     Rung("l5b_fastapi_50routes_included", f"{BASE}/r39"),
     Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello"),
+    Rung("l6_fastapi_depends", f"{BASE}/items/42?limit=5", headers=("x-token: abc",)),
     Rung(
         "l4_fastapi_model",
         f"{BASE}/items",
@@ -99,6 +101,12 @@ LADDER: list[Rung] = [
     Rung("l1_starlette", f"{BASE}/", server="granian"),
     Rung("l2_fastapi_dict", f"{BASE}/", server="granian"),
     Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello", server="granian"),
+    Rung(
+        "l6_fastapi_depends",
+        f"{BASE}/items/42?limit=5",
+        headers=("x-token: abc",),
+        server="granian",
+    ),
     Rung(
         "l4_fastapi_model",
         f"{BASE}/items",
@@ -225,6 +233,8 @@ def oha(rung: Rung, duration: str, concurrency: int) -> dict:
     ]
     if rung.body:
         cmd += ["-d", rung.body, "-H", "content-type: application/json"]
+    for header in rung.headers:
+        cmd += ["-H", header]
     cmd.append(rung.url)
     completed = subprocess.run(cmd, check=True, capture_output=True, text=True)
     return json.loads(completed.stdout)

@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable, MutableMapping
 from pathlib import Path
 from typing import Any
 
-from notslowapi import APIRouter, FastAPI
+from notslowapi import APIRouter, Depends, FastAPI, Header
 from pydantic import BaseModel
 from notslowapi.starlette.applications import Starlette
 from notslowapi.starlette.requests import Request
@@ -60,9 +60,7 @@ async def starlette_params_endpoint(request: Request) -> JSONResponse:
     )
 
 
-l1b_starlette_params = Starlette(
-    routes=[Route("/items/{item_id:int}", starlette_params_endpoint)]
-)
+l1b_starlette_params = Starlette(routes=[Route("/items/{item_id:int}", starlette_params_endpoint)])
 
 l2_fastapi_dict = FastAPI()
 
@@ -90,6 +88,7 @@ async def fastapi_included() -> dict[str, Any]:
 
 
 l2c_fastapi_included.include_router(included_router)
+
 
 def many_routes_starlette() -> Starlette:
     async def param_endpoint(request: Request) -> JSONResponse:
@@ -164,6 +163,29 @@ async def fastapi_model(item: Item) -> Item:
     return item
 
 
+l6_fastapi_depends = FastAPI()
+
+
+async def pagination(skip: int = 0, limit: int = 20) -> dict[str, int]:
+    return {"skip": skip, "limit": limit}
+
+
+async def current_user(x_token: str | None = Header(None)) -> dict[str, Any]:
+    return {"user": x_token or "anonymous"}
+
+
+async def item_access(item_id: int, user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+    return {"item_id": item_id, "user": user["user"]}
+
+
+@l6_fastapi_depends.get("/items/{item_id}")
+async def fastapi_depends(
+    access: dict[str, Any] = Depends(item_access),
+    page: dict[str, int] = Depends(pagination),
+) -> dict[str, Any]:
+    return {**access, **page}
+
+
 def with_pyinstrument(app: ASGIApp, name: str) -> ASGIApp:
     from pyinstrument import Profiler
 
@@ -204,6 +226,7 @@ RUNGS: dict[str, ASGIApp] = {
     "l5b_fastapi_50routes_included": l5b_fastapi_50routes_included,
     "l3_fastapi_params": l3_fastapi_params,
     "l4_fastapi_model": l4_fastapi_model,
+    "l6_fastapi_depends": l6_fastapi_depends,
 }
 
 
