@@ -1052,9 +1052,10 @@ def get_request_handler(
             raise RequestValidationError(
                 solved_result.errors, body=None, endpoint_ctx=endpoint_context(request)
             )
-        raw_response = await run_endpoint_function(
-            dependant=dependant, values=solved_result.values, is_coroutine=is_coroutine
-        )
+        if is_coroutine:
+            raw_response = await call(**solved_result.values)
+        else:
+            raw_response = await run_in_threadpool(call, **solved_result.values)
         if isinstance(raw_response, Response):
             if raw_response.background is None:
                 raw_response.background = solved_result.background_tasks
