@@ -78,7 +78,7 @@ The before/after figures in the next section are same-window runs from the commi
 
 Each change is one commit under `vendor/` with a same-window before and after, in µs per request on uvicorn unless marked granian. The largest wins:
 
-- Routing: an index per routes version maps each static path to the routes that can match it, included routes are matched once instead of twice, and exact static-path hits skip `matches()`. 50 routes via `include_router`: 92.2 → 31.7 (10.8k → 31.6k req/s); 50 plain routes: 36.3 → 25.2.
+- Routing: an index per routes version maps each static path to the routes that can match it, included routes are matched once instead of twice, and exact static-path hits skip `matches()`. 50 routes via `include_router`: 92.2 → 31.7 (10.8k → 31.6k req/s); 50 plain routes: 36.3 → 25.2. Included static routes are then dispatched inline: 50 routes via `include_router`: 26.6 → 20.6 (granian 17.5 → 10.7).
 - Parameter extraction: `ModelField` computes `is_sequence`, alias, `is_model` and location once instead of per request, and `QueryParams` parses in one loop. int path + str query: 50.7 → 35.3 (19.7k → 28.3k req/s), later 24.8 → 22.4.
 - Dependency solver: no throwaway `Response`, and query string, headers and cookies are parsed only when the route needs them; endpoints with no dependencies or parameters skip the solver. Plain route: 31.0 → 26.3; pydantic body: 42.7 → 36.7; plain route on granian: 14.0 → 10.6.
 - Request handler built once: included routes no longer rebuild their handler per request, routes without a body parameter or streaming get a specialized handler, and coroutine endpoints serialize synchronously through pydantic-core. Route via `include_router`: 33.4 → 29.2; pydantic body: 36.5 → 32.3.

@@ -43,11 +43,12 @@ Content-type headers come from a cache, `JSONResponse` reuses one encoder, and `
 
 ## Routing
 
-Every route was matched in order; an index per routes version now maps each static path to the routes that can match it (a plain list assigned to `router.routes` falls back to the scan), included routes are matched once instead of twice, and exact static-path hits skip `matches()`.
+Every route was matched in order; an index per routes version now maps each static path to the routes that can match it (a plain list assigned to `router.routes` falls back to the scan), included routes are matched once instead of twice, and exact static-path hits skip `matches()`. A static route mounted with `include_router` went through eight matching and handling layers, including a regex match on a static path; the app's router now asks the included router for a static full match and dispatches to the route directly, with the general path kept for router and route subclasses, dynamic matches and method mismatches.
 
 - l1c_starlette_50routes: 26.7 → 20.5; l5_fastapi_50routes: 36.3 → 25.2
 - l5b_fastapi_50routes_included: 92.2 → 31.7 (10.8k → 31.6k req/s), then 31.7 → 29.8
 - l2c_fastapi_included: 26.8 → 23.1; l2_fastapi_dict: 17.8 → 17.1
+- l2c_fastapi_included: 21.0 → 18.3; l5b_fastapi_50routes_included: 26.6 → 20.6 (37.6k → 48.5k req/s), on granian 17.5 → 10.7 (57.1k → 93.5k req/s)
 
 ## Starlette vendored
 
