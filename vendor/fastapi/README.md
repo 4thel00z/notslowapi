@@ -72,7 +72,7 @@ The changes are inside the framework: parameter extraction, the dependency solve
 
 ## Compatibility
 
-notslowapi 0.1.0 has the public API of FastAPI 0.141.1: classes, functions, parameters and behaviors are upstream's, and the changes are internal. The check is the upstream test suite with its imports rewritten: 3,335 FastAPI tests plus 1,154 Starlette tests, 4,489 pass, with the same 8 environmental failures before and after every change. The modified Starlette 1.6.0 ships inside the package as `notslowapi.starlette` and nothing is installed under the `starlette` name, so code that imports `starlette.*` directly needs upstream Starlette installed and gets upstream behavior for those objects.
+notslowapi 0.1.0 has the public API of FastAPI 0.141.1: classes, functions, parameters and behaviors are upstream's, and the changes are internal. The check is the upstream test suite with its imports rewritten: 4,493 tests pass, and the three files that need packages this repo does not install (fastapi-cli, strawberry, the OpenTelemetry SDK) are skipped. The modified Starlette 1.6.0 ships inside the package as `notslowapi.starlette` and nothing is installed under the `starlette` name, so code that imports `starlette.*` directly needs upstream Starlette installed and gets upstream behavior for those objects.
 
 ```python
 from notslowapi.starlette.middleware.base import BaseHTTPMiddleware

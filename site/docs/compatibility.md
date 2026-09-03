@@ -42,11 +42,12 @@ Nothing is installed under the `starlette` name. Code that imports `starlette.*`
 
 ## The test suite
 
-The merged suite is FastAPI's 3,335 tests plus Starlette's 1,154: 4,489 pass. Eight more fail for environmental reasons (the OpenTelemetry SDK not installed, `strawberry.fastapi`, `fastapi-cli`, tests that depend on the working directory) and fail the same way before and after every change. CI runs ruff on both trees and then the suite:
+The merged suite is FastAPI's tests plus Starlette's under `tests/starlette`: 4,493 pass. Three files are skipped because their packages are not installed here (fastapi-cli, strawberry, the OpenTelemetry SDK). CI runs ruff on both trees and then the suite from `vendor/fastapi`, where the tests expect to find their fixture files:
 
 ```console
 uv sync --group test
-uv run pytest -c vendor/fastapi/pyproject.toml --rootdir vendor/fastapi vendor/fastapi/tests
+cd vendor/fastapi
+uv run --project ../.. pytest tests --ignore=tests/benchmarks --ignore=tests/memory_benchmarks
 ```
 
 CI adds `--ignore` flags for the benchmark and GraphQL tutorial directories.

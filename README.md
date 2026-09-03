@@ -83,7 +83,7 @@ The full list with every measurement is at [What changed](https://notslowapi.com
 
 ## Compatibility
 
-notslowapi 0.1.0 has the public API of FastAPI 0.141.1: classes, functions, parameters and behaviors are upstream's, and the changes are internal. The check is the upstream test suite with its imports rewritten: 3,335 FastAPI tests plus 1,154 Starlette tests, 4,489 pass, with the same 8 environmental failures before and after every change. The modified Starlette 1.6.0 ships inside the package as `notslowapi.starlette` and nothing is installed under the `starlette` name, so code that imports `starlette.*` directly needs upstream Starlette installed and gets upstream behavior for those objects.
+notslowapi 0.1.0 has the public API of FastAPI 0.141.1: classes, functions, parameters and behaviors are upstream's, and the changes are internal. The check is the upstream test suite with its imports rewritten: 4,493 tests pass, and the three files that need packages this repo does not install (fastapi-cli, strawberry, the OpenTelemetry SDK) are skipped. The modified Starlette 1.6.0 ships inside the package as `notslowapi.starlette` and nothing is installed under the `starlette` name, so code that imports `starlette.*` directly needs upstream Starlette installed and gets upstream behavior for those objects.
 
 The two observable internal differences and the behaviors probed before and after each change are listed at [Compatibility](https://notslowapi.com/docs/compatibility/).
 
@@ -111,7 +111,8 @@ The merged test suite:
 
 ```console
 uv sync --group test
-uv run pytest -c vendor/fastapi/pyproject.toml --rootdir vendor/fastapi vendor/fastapi/tests
+cd vendor/fastapi
+uv run --project ../.. pytest tests --ignore=tests/benchmarks --ignore=tests/memory_benchmarks
 ```
 
 CI adds `--ignore` flags for the benchmark and GraphQL tutorial directories; see `.github/workflows/ci.yml`.

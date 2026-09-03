@@ -1,6 +1,6 @@
 # notslowapi
 
-notslowapi is a fork of FastAPI 0.141.1 that does less work per request. The public API is the one you already use, and the upstream test suite passes unchanged: 4,489 tests across FastAPI and Starlette. The changes are inside the framework: parameter extraction, the dependency solver, routing, exception handling and response encoding. Every change is one commit with a before and after measurement, and the numbers and profiles are committed to the repository.
+notslowapi is a fork of FastAPI 0.141.1 that does less work per request. The public API is the one you already use, and the upstream test suite passes unchanged: 4,493 tests across FastAPI and Starlette. The changes are inside the framework: parameter extraction, the dependency solver, routing, exception handling and response encoding. Every change is one commit with a before and after measurement, and the numbers and profiles are committed to the repository.
 
 The Starlette it depends on (1.6.0) is modified as well and ships inside the package as `notslowapi.starlette`. Nothing is installed under the `starlette` name, so notslowapi can sit next to an upstream Starlette install without either overwriting the other. The first release is 0.1.0. FastAPI code is MIT licensed; the vendored Starlette keeps its BSD-3 license.
 

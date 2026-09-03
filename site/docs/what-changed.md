@@ -55,4 +55,4 @@ The last commit moves the modified Starlette into the package as `notslowapi.sta
 
 ## What did not change
 
-The public API: each commit's probe (routing, included routers, `yield` dependencies, exceptions around response start, forms, response types) is identical before and after. The OpenAPI path list. The test suite: 3,335 FastAPI plus 1,154 Starlette tests, 4,489 in total, same 8 environmental failures throughout.
+The public API: each commit's probe (routing, included routers, `yield` dependencies, exceptions around response start, forms, response types) is identical before and after. The OpenAPI path list. The test suite: the same FastAPI and Starlette tests pass before and after every change, 4,493 today.
