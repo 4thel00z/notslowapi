@@ -1,6 +1,6 @@
-from notsoslow import FastAPI
+from notslowapi import FastAPI
+from notslowapi.starlette.testclient import TestClient
 from pydantic import BaseModel, Field
-from starlette.testclient import TestClient
 
 app = FastAPI()
 

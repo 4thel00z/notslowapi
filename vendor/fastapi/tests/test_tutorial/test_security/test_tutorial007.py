@@ -2,8 +2,8 @@ import importlib
 from base64 import b64encode
 
 import pytest
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 
 @pytest.fixture(

@@ -1,7 +1,7 @@
 import pytest
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 
 from tests.utils import workdir_lock
 

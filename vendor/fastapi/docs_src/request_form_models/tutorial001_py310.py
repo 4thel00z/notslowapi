@@ -1,4 +1,4 @@
-from notsoslow import FastAPI, Form
+from notslowapi import FastAPI, Form
 from pydantic import BaseModel
 
 app = FastAPI()

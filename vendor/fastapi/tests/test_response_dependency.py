@@ -6,9 +6,9 @@ and that the dependency injection system properly handles them.
 
 from typing import Annotated
 
-from notsoslow import BackgroundTasks, Depends, FastAPI, Request, Response
-from notsoslow.responses import JSONResponse
-from notsoslow.testclient import TestClient
+from notslowapi import BackgroundTasks, Depends, FastAPI, Request, Response
+from notslowapi.responses import JSONResponse
+from notslowapi.testclient import TestClient
 
 
 def test_response_with_depends_annotated():

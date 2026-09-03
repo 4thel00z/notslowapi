@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install 3.13
+      - name: Build package
+        run: uv build --sdist --wheel vendor/fastapi -o dist/
+      - name: Check the wheel imports and carries the vendored Starlette
+        run: |
+          uv venv /tmp/check && uv pip install --python /tmp/check/bin/python dist/*.whl
+          /tmp/check/bin/python -c "import notslowapi, notslowapi.starlette; print(notslowapi.__version__)"
+          unzip -l dist/*.whl | grep -q 'notslowapi/starlette/LICENSE.md'
+      - name: Store distribution packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distribution packages
+        uses: actions/download-artifact@v8
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: GitHub release
+    needs: publish-to-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download distribution packages
+        uses: actions/download-artifact@v8
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes

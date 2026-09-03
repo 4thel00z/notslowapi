@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.openapi.docs import (
+from notslowapi import FastAPI
+from notslowapi.openapi.docs import (
     get_redoc_html,
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,

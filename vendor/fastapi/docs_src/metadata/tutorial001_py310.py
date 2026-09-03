@@ -1,4 +1,4 @@
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 description = """
 ChimichangApp API helps you do awesome stuff. 🚀

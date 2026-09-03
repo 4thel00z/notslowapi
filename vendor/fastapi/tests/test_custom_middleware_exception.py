@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from notsoslow import APIRouter, FastAPI, File, UploadFile
-from notsoslow.exceptions import HTTPException
-from notsoslow.testclient import TestClient
-from starlette.types import ASGIApp
+from notslowapi import APIRouter, FastAPI, File, UploadFile
+from notslowapi.exceptions import HTTPException
+from notslowapi.starlette.types import ASGIApp
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

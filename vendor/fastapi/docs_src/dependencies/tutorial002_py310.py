@@ -1,4 +1,4 @@
-from notsoslow import Depends, FastAPI
+from notslowapi import Depends, FastAPI
 
 app = FastAPI()
 

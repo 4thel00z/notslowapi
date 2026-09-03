@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 
 items = {}
 

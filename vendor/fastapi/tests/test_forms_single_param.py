@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from notsoslow import FastAPI, Form
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Form
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

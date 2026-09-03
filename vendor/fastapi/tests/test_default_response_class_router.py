@@ -1,6 +1,6 @@
-from notsoslow import APIRouter, FastAPI
-from notsoslow.responses import HTMLResponse, JSONResponse, PlainTextResponse
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, FastAPI
+from notslowapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from notslowapi.testclient import TestClient
 
 
 class OverrideResponse(JSONResponse):

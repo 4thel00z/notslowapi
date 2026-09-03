@@ -1,9 +1,9 @@
 import importlib
 
 import pytest
-from notsoslow._compat import PYDANTIC_VERSION_MINOR_TUPLE
-from notsoslow.testclient import TestClient
 from inline_snapshot import Is, snapshot
+from notslowapi._compat import PYDANTIC_VERSION_MINOR_TUPLE
+from notslowapi.testclient import TestClient
 
 from ...utils import needs_py310
 

@@ -4,8 +4,8 @@ import sys
 from unittest import mock
 
 import pytest
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 MOD_NAME = "docs_src.debugging.tutorial001_py310"
 

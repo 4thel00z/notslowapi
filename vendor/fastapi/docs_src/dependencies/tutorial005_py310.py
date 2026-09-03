@@ -1,4 +1,4 @@
-from notsoslow import Cookie, Depends, FastAPI
+from notslowapi import Cookie, Depends, FastAPI
 
 app = FastAPI()
 

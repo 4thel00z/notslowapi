@@ -1,8 +1,8 @@
 import pytest
-from notsoslow import APIRouter, FastAPI
-from notsoslow.routing import APIRoute
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import APIRouter, FastAPI
+from notslowapi.routing import APIRoute
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

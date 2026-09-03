@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import FastAPI, File, UploadFile
-from notsoslow.responses import HTMLResponse
+from notslowapi import FastAPI, File, UploadFile
+from notslowapi.responses import HTMLResponse
 
 app = FastAPI()
 

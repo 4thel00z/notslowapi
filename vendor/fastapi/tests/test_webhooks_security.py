@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Annotated
 
-from notsoslow import FastAPI, Security
-from notsoslow.security import HTTPBearer
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Security
+from notslowapi.security import HTTPBearer
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 app = FastAPI()

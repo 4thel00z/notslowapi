@@ -1,4 +1,4 @@
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 from docs_src.cors.tutorial001_py310 import app
 

@@ -1,5 +1,5 @@
 import strawberry
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 from strawberry.fastapi import GraphQLRouter
 
 

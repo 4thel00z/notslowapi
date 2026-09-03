@@ -4,9 +4,9 @@ from collections.abc import AsyncGenerator, Generator
 from functools import wraps
 
 import pytest
-from notsoslow import Depends, FastAPI
-from notsoslow.concurrency import iterate_in_threadpool, run_in_threadpool
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI
+from notslowapi.concurrency import iterate_in_threadpool, run_in_threadpool
+from notslowapi.testclient import TestClient
 
 if sys.version_info >= (3, 13):  # pragma: no cover
     from inspect import iscoroutinefunction

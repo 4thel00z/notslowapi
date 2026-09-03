@@ -1,4 +1,4 @@
-from notsoslow import FastAPI, Query
+from notslowapi import FastAPI, Query
 
 app = FastAPI()
 

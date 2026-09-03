@@ -1,7 +1,7 @@
 import functools
 
 import pytest
-from notsoslow import (
+from notslowapi import (
     APIRouter,
     Depends,
     FastAPI,
@@ -10,8 +10,8 @@ from notsoslow import (
     WebSocketDisconnect,
     status,
 )
-from notsoslow.middleware import Middleware
-from notsoslow.testclient import TestClient
+from notslowapi.middleware import Middleware
+from notslowapi.testclient import TestClient
 
 router = APIRouter()
 prefix_router = APIRouter()

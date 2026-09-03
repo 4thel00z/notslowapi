@@ -2,13 +2,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import jwt
-from notsoslow import Depends, FastAPI, HTTPException, Security, status
-from notsoslow.security import (
+from jwt.exceptions import InvalidTokenError
+from notslowapi import Depends, FastAPI, HTTPException, Security, status
+from notslowapi.security import (
     OAuth2PasswordBearer,
     OAuth2PasswordRequestForm,
     SecurityScopes,
 )
-from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 from pydantic import BaseModel, ValidationError
 

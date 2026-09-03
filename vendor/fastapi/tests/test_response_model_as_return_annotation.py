@@ -1,9 +1,9 @@
 import pytest
-from notsoslow import FastAPI
-from notsoslow.exceptions import FastAPIError, ResponseValidationError
-from notsoslow.responses import JSONResponse, Response
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI
+from notslowapi.exceptions import FastAPIError, ResponseValidationError
+from notslowapi.responses import JSONResponse, Response
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 

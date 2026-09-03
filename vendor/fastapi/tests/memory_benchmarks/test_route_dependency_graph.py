@@ -3,8 +3,8 @@ from collections.abc import Callable
 from typing import Annotated, Any
 
 import pytest
-from notsoslow import Depends, FastAPI
-from notsoslow.routing import APIRoute
+from notslowapi import Depends, FastAPI
+from notslowapi.routing import APIRoute
 
 if "--codspeed" not in sys.argv:
     pytest.skip(

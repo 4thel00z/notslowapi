@@ -1,5 +1,5 @@
 import pytest
-from notsoslow import APIRouter
+from notslowapi import APIRouter
 
 
 def test_router_circular_import():

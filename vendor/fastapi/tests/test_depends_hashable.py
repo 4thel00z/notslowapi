@@ -2,7 +2,7 @@
 # as other tools that use them depend on that
 # Ref: https://github.com/fastapi/fastapi/pull/14320
 
-from notsoslow import Depends, Security
+from notslowapi import Depends, Security
 
 
 def dep():

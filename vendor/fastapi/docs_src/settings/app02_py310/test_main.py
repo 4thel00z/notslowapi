@@ -1,4 +1,4 @@
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 from .config import Settings
 from .main import app, get_settings

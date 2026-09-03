@@ -1,4 +1,4 @@
-from notsoslow import FastAPI, Header
+from notslowapi import FastAPI, Header
 from pydantic import BaseModel
 
 app = FastAPI()

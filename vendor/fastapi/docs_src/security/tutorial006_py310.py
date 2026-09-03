@@ -1,5 +1,5 @@
-from notsoslow import Depends, FastAPI
-from notsoslow.security import HTTPBasic, HTTPBasicCredentials
+from notslowapi import Depends, FastAPI
+from notslowapi.security import HTTPBasic, HTTPBasicCredentials
 
 app = FastAPI()
 

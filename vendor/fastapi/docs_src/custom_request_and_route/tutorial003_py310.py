@@ -1,8 +1,8 @@
 import time
 from collections.abc import Callable
 
-from notsoslow import APIRouter, FastAPI, Request, Response
-from notsoslow.routing import APIRoute
+from notslowapi import APIRouter, FastAPI, Request, Response
+from notslowapi.routing import APIRoute
 
 
 class TimedRoute(APIRoute):

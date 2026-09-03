@@ -1,22 +1,34 @@
 # notslowapi
 
-Home of `notsoslow`, a fork of FastAPI that is being made faster, measured layer by layer.
+Home of `notslowapi`, a fork of FastAPI that is being made faster, measured layer by layer.
 
-- `vendor/fastapi`: the fork (Python package `notsoslow`), git subtree of github.com/4thel00z/fastapi
-- `vendor/starlette`: git subtree of github.com/4thel00z/starlette, also modified
+- `vendor/fastapi`: the fork, Python package `notslowapi`, git subtree of github.com/4thel00z/fastapi
+- `vendor/fastapi/notslowapi/starlette`: the modified Starlette, vendored inside the package as `notslowapi.starlette`
 - `bench/`: the benchmark ladder (`uv run python -m bench.run`) and `bench/baseline/` with before/after numbers for every change
 
-## Using notsoslow
+## Using notslowapi
 
-`notsoslow` is FastAPI with the same API and the same test suite. Import it as `from notsoslow import FastAPI`;
-`NotSoSlow` is an alias of `FastAPI`. Starlette is used unchanged in name but comes from `vendor/starlette`.
+`notslowapi` is FastAPI with the same API and the same test suite, plus the modified Starlette it depends on
+shipped inside the package. Nothing else is installed under the `starlette` name.
+
+```console
+uv add notslowapi[granian]
+```
+
+```python
+from notslowapi import FastAPI
+```
+
+Import responses, requests and middleware from `notslowapi.*` as the FastAPI docs already recommend, or from
+`notslowapi.starlette.*`. Code that imports `starlette.*` directly needs upstream Starlette installed and gets
+upstream behavior for those objects.
 
 ## Deploying
 
 Measured on one core (M3 Pro, Python 3.13), 64 keep-alive connections, one route returning a small JSON body,
 after the changes in `git log -- vendor/` (ladder v3, `bench/baseline/results_ladder_v3.json`):
 
-| server | raw ASGI µs/request | Starlette route | notsoslow route | notsoslow requests/s |
+| server | raw ASGI µs/request | Starlette route | notslowapi route | notslowapi requests/s |
 |---|---|---|---|---|
 | uvicorn defaults (uvloop, httptools) | 13.5 | 17.4 | 18.3 | 54,800 |
 | granian `--interface asgi --workers 1 --loop uvloop` | 7.8 | 8.5 | 9.1 | 110,200 |

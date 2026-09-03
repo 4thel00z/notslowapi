@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from notsoslow import Depends, FastAPI, Header, HTTPException
+from notslowapi import Depends, FastAPI, Header, HTTPException
 
 
 async def verify_token(x_token: Annotated[str, Header()]):

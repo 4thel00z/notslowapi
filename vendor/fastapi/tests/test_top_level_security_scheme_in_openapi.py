@@ -1,10 +1,10 @@
 # Test security scheme at the top level, including OpenAPI
 # Ref: https://github.com/fastapi/fastapi/discussions/14263
 # Ref: https://github.com/fastapi/fastapi/issues/14271
-from notsoslow import Depends, FastAPI
-from notsoslow.security import HTTPBearer
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import Depends, FastAPI
+from notslowapi.security import HTTPBearer
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

@@ -1,6 +1,6 @@
 import pytest
-from notsoslow.testclient import TestClient
-from notsoslow.websockets import WebSocketDisconnect
+from notslowapi.testclient import TestClient
+from notslowapi.websockets import WebSocketDisconnect
 
 from docs_src.websockets_.tutorial001_py310 import app
 

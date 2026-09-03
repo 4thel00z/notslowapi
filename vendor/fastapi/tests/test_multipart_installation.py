@@ -1,8 +1,8 @@
 import warnings
 
 import pytest
-from notsoslow import FastAPI, File, Form, UploadFile
-from notsoslow.dependencies.utils import (
+from notslowapi import FastAPI, File, Form, UploadFile
+from notslowapi.dependencies.utils import (
     multipart_incorrect_install_error,
     multipart_not_installed_error,
 )

@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.middleware.cors import CORSMiddleware
+from notslowapi import FastAPI
+from notslowapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 

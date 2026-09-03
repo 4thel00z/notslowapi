@@ -2,7 +2,7 @@ import warnings
 
 import pytest
 from inline_snapshot import snapshot
-from starlette.testclient import TestClient
+from notslowapi.starlette.testclient import TestClient
 
 warnings.filterwarnings(
     "ignore",

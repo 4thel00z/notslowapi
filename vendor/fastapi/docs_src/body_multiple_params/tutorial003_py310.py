@@ -1,4 +1,4 @@
-from notsoslow import Body, FastAPI
+from notslowapi import Body, FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()

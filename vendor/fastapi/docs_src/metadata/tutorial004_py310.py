@@ -1,4 +1,4 @@
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 tags_metadata = [
     {

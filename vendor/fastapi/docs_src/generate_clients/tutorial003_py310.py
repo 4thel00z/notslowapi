@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.routing import APIRoute
+from notslowapi import FastAPI
+from notslowapi.routing import APIRoute
 from pydantic import BaseModel
 
 

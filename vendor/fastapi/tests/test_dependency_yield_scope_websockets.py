@@ -2,9 +2,9 @@ from contextvars import ContextVar
 from typing import Annotated, Any
 
 import pytest
-from notsoslow import Depends, FastAPI, WebSocket
-from notsoslow.exceptions import FastAPIError
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI, WebSocket
+from notslowapi.exceptions import FastAPIError
+from notslowapi.testclient import TestClient
 
 global_context: ContextVar[dict[str, Any]] = ContextVar("global_context", default={})  # noqa: B039
 

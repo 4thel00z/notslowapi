@@ -7,7 +7,7 @@ from typing import Literal
 
 import anyio
 import pytest
-from notsoslow import (
+from notslowapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
@@ -16,10 +16,10 @@ from notsoslow import (
     Request,
     WebSocket,
 )
-from notsoslow.testclient import TestClient
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.responses import PlainTextResponse, Response
-from starlette.routing import BaseRoute, Match, NoMatchFound, Route
+from notslowapi.starlette.exceptions import HTTPException as StarletteHTTPException
+from notslowapi.starlette.responses import PlainTextResponse, Response
+from notslowapi.starlette.routing import BaseRoute, Match, NoMatchFound, Route
+from notslowapi.testclient import TestClient
 
 
 def write_file(path: Path, content: str) -> None:
@@ -138,13 +138,13 @@ def test_frontend_route_group_helpers(tmp_path: Path):
         "/prefix",
     )
     assert match == Match.FULL
-    assert child_scope["notsoslow"]["frontend_path"] == ""
+    assert child_scope["notslowapi"]["frontend_path"] == ""
 
     match, child_scope = route_group.routes[0].matches(
         {"type": "http", "path": "/app", "method": "GET"}
     )
     assert match == Match.FULL
-    assert child_scope["notsoslow"]["frontend_path"] == ""
+    assert child_scope["notslowapi"]["frontend_path"] == ""
 
     with pytest.raises(StarletteHTTPException) as exc_info:
         anyio.run(

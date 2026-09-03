@@ -2,8 +2,8 @@ import importlib
 from types import ModuleType
 
 import pytest
-from notsoslow.exceptions import FastAPIError
-from notsoslow.testclient import TestClient
+from notslowapi.exceptions import FastAPIError
+from notslowapi.testclient import TestClient
 
 
 @pytest.fixture(

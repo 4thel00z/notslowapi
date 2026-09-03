@@ -8,9 +8,9 @@ from typing import Annotated
 
 import anyio
 import pytest
-from notsoslow import FastAPI, File
-from notsoslow.testclient import TestClient
-from starlette.datastructures import UploadFile as StarletteUploadFile
+from notslowapi import FastAPI, File
+from notslowapi.starlette.datastructures import UploadFile as StarletteUploadFile
+from notslowapi.testclient import TestClient
 
 
 def test_list_bytes_file_preserves_order(

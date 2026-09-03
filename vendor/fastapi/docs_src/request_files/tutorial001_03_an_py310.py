@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from notsoslow import FastAPI, File, UploadFile
+from notslowapi import FastAPI, File, UploadFile
 
 app = FastAPI()
 

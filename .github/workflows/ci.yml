@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    name: Tests and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.13
+      - name: Sync
+        run: uv sync --group test
+      - name: Lint notslowapi
+        run: uv run ruff check vendor/fastapi/notslowapi vendor/fastapi/tests vendor/fastapi/docs_src
+      - name: Lint vendored Starlette
+        run: uv run ruff check --config vendor/fastapi/scripts/ruff-starlette.toml vendor/fastapi/notslowapi/starlette vendor/fastapi/tests/starlette
+      - name: Test
+        run: >
+          uv run pytest -c vendor/fastapi/pyproject.toml --rootdir vendor/fastapi vendor/fastapi/tests
+          --ignore=vendor/fastapi/tests/benchmarks --ignore=vendor/fastapi/tests/memory_benchmarks
+          --deselect vendor/fastapi/tests/test_fastapi_cli.py::test_fastapi_cli
+          --ignore=vendor/fastapi/tests/test_tutorial/test_graphql
+          --ignore=vendor/fastapi/tests/starlette/middleware/test_opentelemetry.py
+          -n auto -q -p no:cacheprovider
+        working-directory: .

@@ -1,7 +1,7 @@
 import functools
 
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 
 from .forward_reference_type import forwardref_method
 

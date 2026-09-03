@@ -1,5 +1,5 @@
-from notsoslow import FastAPI, WebSocket
-from notsoslow.responses import HTMLResponse
+from notslowapi import FastAPI, WebSocket
+from notslowapi.responses import HTMLResponse
 
 app = FastAPI()
 

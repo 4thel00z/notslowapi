@@ -3,9 +3,9 @@ from contextlib import contextmanager
 from typing import Annotated, Any
 
 import pytest
-from notsoslow import Depends, FastAPI
-from notsoslow.responses import StreamingResponse
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI
+from notslowapi.responses import StreamingResponse
+from notslowapi.testclient import TestClient
 
 
 class Session:

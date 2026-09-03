@@ -1,7 +1,7 @@
 import importlib
 
 import pytest
-from notsoslow.exceptions import FastAPIError
+from notslowapi.exceptions import FastAPIError
 
 from ...utils import needs_py310
 

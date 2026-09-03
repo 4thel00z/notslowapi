@@ -1,4 +1,4 @@
-from notsoslow import Depends, FastAPI, HTTPException
+from notslowapi import Depends, FastAPI, HTTPException
 
 app = FastAPI()
 

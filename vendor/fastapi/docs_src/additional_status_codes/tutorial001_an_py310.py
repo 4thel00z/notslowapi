@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import Body, FastAPI, status
-from notsoslow.responses import JSONResponse
+from notslowapi import Body, FastAPI, status
+from notslowapi.responses import JSONResponse
 
 app = FastAPI()
 

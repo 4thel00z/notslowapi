@@ -1,8 +1,8 @@
-from notsoslow import APIRouter, FastAPI
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import APIRouter, FastAPI
+from notslowapi.starlette.responses import JSONResponse
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel, HttpUrl
-from starlette.responses import JSONResponse
 
 
 class CustomModel(BaseModel):

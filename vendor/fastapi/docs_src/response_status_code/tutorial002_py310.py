@@ -1,4 +1,4 @@
-from notsoslow import FastAPI, status
+from notslowapi import FastAPI, status
 
 app = FastAPI()
 

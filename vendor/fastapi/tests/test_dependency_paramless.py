@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from notsoslow import FastAPI, HTTPException, Security
-from notsoslow.security import (
+from notslowapi import FastAPI, HTTPException, Security
+from notslowapi.security import (
     OAuth2PasswordBearer,
     SecurityScopes,
 )
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

@@ -1,5 +1,5 @@
-from notsoslow import Depends, FastAPI, HTTPException, status
-from notsoslow.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from notslowapi import Depends, FastAPI, HTTPException, status
+from notslowapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
 fake_users_db = {

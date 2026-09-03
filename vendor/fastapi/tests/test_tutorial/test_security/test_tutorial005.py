@@ -4,8 +4,8 @@ from types import ModuleType
 from typing import Any, cast
 
 import pytest
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 from ...utils import needs_py310
 

@@ -1,9 +1,9 @@
 from collections.abc import Callable
 from typing import Annotated
 
-from notsoslow import Body, FastAPI, HTTPException, Request, Response
-from notsoslow.exceptions import RequestValidationError
-from notsoslow.routing import APIRoute
+from notslowapi import Body, FastAPI, HTTPException, Request, Response
+from notslowapi.exceptions import RequestValidationError
+from notslowapi.routing import APIRoute
 
 
 class ValidationErrorLoggingRoute(APIRoute):

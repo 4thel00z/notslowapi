@@ -1,5 +1,5 @@
 import pytest
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 pytest.importorskip("orjson")
 

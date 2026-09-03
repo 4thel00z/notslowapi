@@ -1,9 +1,9 @@
 from typing import Annotated
 
 import pytest
-from notsoslow import Depends, FastAPI, Path
-from notsoslow.param_functions import Query
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI, Path
+from notslowapi.param_functions import Query
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

@@ -1,4 +1,4 @@
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 from docs_src.response_change_status_code.tutorial001_py310 import app
 

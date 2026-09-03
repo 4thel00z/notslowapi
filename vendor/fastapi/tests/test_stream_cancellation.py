@@ -8,9 +8,9 @@ from collections.abc import AsyncIterable
 
 import anyio
 import pytest
-from notsoslow import FastAPI
-from notsoslow.responses import StreamingResponse
-from starlette.types import Message, Scope
+from notslowapi import FastAPI
+from notslowapi.responses import StreamingResponse
+from notslowapi.starlette.types import Message, Scope
 
 pytestmark = [
     pytest.mark.anyio,

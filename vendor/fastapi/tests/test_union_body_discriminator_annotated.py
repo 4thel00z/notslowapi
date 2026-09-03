@@ -3,15 +3,15 @@
 from typing import Annotated
 
 import pytest
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 
 @pytest.fixture(name="client")
 def client_fixture() -> TestClient:
-    from notsoslow import Body
+    from notslowapi import Body
     from pydantic import Discriminator, Tag
 
     class Cat(BaseModel):

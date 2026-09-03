@@ -1,8 +1,8 @@
 from typing import Annotated, Any
 from unittest.mock import Mock, patch
 
-from notsoslow import Depends, FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI
+from notslowapi.testclient import TestClient
 
 from docs_src.dependencies.tutorial010_py310 import get_db
 

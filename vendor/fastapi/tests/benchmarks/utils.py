@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Annotated, Any
 
-from notsoslow import Depends, FastAPI
+from notslowapi import Depends, FastAPI
 
 LAST_DEPENDENCY_INDEX = 100
 ROUTE_COUNT = 20

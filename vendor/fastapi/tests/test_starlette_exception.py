@@ -1,7 +1,7 @@
-from notsoslow import FastAPI, HTTPException
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from notslowapi import FastAPI, HTTPException
+from notslowapi.starlette.exceptions import HTTPException as StarletteHTTPException
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

@@ -1,6 +1,6 @@
 import pytest
-from notsoslow import Body, Depends, FastAPI, HTTPException
-from notsoslow.testclient import TestClient
+from notslowapi import Body, Depends, FastAPI, HTTPException
+from notslowapi.testclient import TestClient
 
 initial_fake_database = {"rick": "Rick Sanchez"}
 

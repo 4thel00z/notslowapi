@@ -2,10 +2,10 @@ import json
 from typing import Annotated, Any
 
 import pytest
-from notsoslow import APIRouter, Depends, FastAPI, HTTPException
-from notsoslow.exceptions import FastAPIError
-from notsoslow.responses import StreamingResponse
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, Depends, FastAPI, HTTPException
+from notslowapi.exceptions import FastAPIError
+from notslowapi.responses import StreamingResponse
+from notslowapi.testclient import TestClient
 
 
 class Session:

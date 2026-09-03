@@ -1,4 +1,4 @@
-from notsoslow import Depends
+from notslowapi import Depends
 
 
 async def dependency_a():

@@ -1,6 +1,6 @@
 import time
 
-from notsoslow import FastAPI, Request
+from notslowapi import FastAPI, Request
 
 app = FastAPI()
 

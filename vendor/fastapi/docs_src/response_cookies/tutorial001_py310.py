@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.responses import JSONResponse
+from notslowapi import FastAPI
+from notslowapi.responses import JSONResponse
 
 app = FastAPI()
 

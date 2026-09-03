@@ -1,8 +1,8 @@
 import json
 from typing import Annotated
 
-from notsoslow import Cookie, FastAPI, Form, Header, Query
-from notsoslow.testclient import TestClient
+from notslowapi import Cookie, FastAPI, Form, Header, Query
+from notslowapi.testclient import TestClient
 from pydantic import Json
 
 app = FastAPI()

@@ -3,7 +3,7 @@ import time
 from types import ModuleType
 
 import pytest
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 
 @pytest.fixture(

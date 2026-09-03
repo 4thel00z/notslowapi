@@ -2,9 +2,9 @@
 
 from typing import Annotated, Any
 
-from notsoslow import FastAPI, Security
-from notsoslow.security import SecurityScopes
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI, Security
+from notslowapi.security import SecurityScopes
+from notslowapi.testclient import TestClient
 
 
 async def security1(scopes: SecurityScopes):

@@ -1,5 +1,5 @@
-from notsoslow.responses import PlainTextResponse
-from notsoslow.testclient import TestClient
+from notslowapi.responses import PlainTextResponse
+from notslowapi.testclient import TestClient
 
 from docs_src.advanced_middleware.tutorial003_py310 import app
 

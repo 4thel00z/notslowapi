@@ -1,10 +1,10 @@
 from collections.abc import AsyncIterable
 
 import pytest
-from notsoslow import Depends, FastAPI, Response
-from notsoslow.responses import EventSourceResponse, StreamingResponse
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import Depends, FastAPI, Response
+from notslowapi.responses import EventSourceResponse, StreamingResponse
+from notslowapi.testclient import TestClient
 
 SSE_RESPONSE = {
     "description": "Successful Response",

@@ -1,8 +1,8 @@
 import pytest
-from notsoslow import Depends, FastAPI, HTTPException
-from notsoslow.exceptions import RequestValidationError
-from notsoslow.testclient import TestClient
-from starlette.responses import JSONResponse
+from notslowapi import Depends, FastAPI, HTTPException
+from notslowapi.exceptions import RequestValidationError
+from notslowapi.starlette.responses import JSONResponse
+from notslowapi.testclient import TestClient
 
 
 def http_exception_handler(request, exception):

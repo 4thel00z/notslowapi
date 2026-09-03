@@ -3,11 +3,11 @@ from collections.abc import Sequence
 from typing import Annotated, cast
 
 import pytest
-from notsoslow import APIRouter, Body, Depends, FastAPI, Request, Security
-from notsoslow.exceptions import FastAPIError
-from notsoslow.openapi.utils import get_openapi
-from notsoslow.responses import HTMLResponse, JSONResponse, PlainTextResponse
-from notsoslow.routing import (
+from notslowapi import APIRouter, Body, Depends, FastAPI, Request, Security
+from notslowapi.exceptions import FastAPIError
+from notslowapi.openapi.utils import get_openapi
+from notslowapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from notslowapi.routing import (
     APIRoute,
     RouteContext,
     _IncludedRouter,
@@ -15,10 +15,18 @@ from notsoslow.routing import (
     _restore_fastapi_scope_key,
     iter_route_contexts,
 )
-from notsoslow.security import HTTPBearer
-from notsoslow.testclient import TestClient
+from notslowapi.security import HTTPBearer
+from notslowapi.starlette.routing import (
+    BaseRoute,
+    Host,
+    Match,
+    Mount,
+    NoMatchFound,
+    Route,
+    Router,
+)
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
-from starlette.routing import BaseRoute, Host, Match, Mount, NoMatchFound, Route, Router
 
 
 def dependency_a():
@@ -164,7 +172,7 @@ def test_router_include_context_matches_flattened_include_metadata():
         generate_unique_id_function=unique_id_b,
     )
     def read_item(item_id: str, request: Request):
-        context = request.scope["notsoslow"]["effective_route_context"]
+        context = request.scope["notslowapi"]["effective_route_context"]
         return JSONResponse(
             {
                 "path": context.path,
@@ -450,7 +458,7 @@ def test_effective_route_context_is_available_in_scope_during_request():
 
     @router.get("/items")
     def read_items(request: Request):
-        fastapi_scope = request.scope.get("notsoslow")
+        fastapi_scope = request.scope.get("notslowapi")
         assert isinstance(fastapi_scope, dict)
         return {
             "has_context": "effective_route_context" in fastapi_scope,
@@ -677,7 +685,7 @@ def test_failed_included_match_does_not_leak_effective_context_to_later_route():
 
     @fallback_router.get("/items")
     def fallback_item(request: Request):
-        fastapi_scope = request.scope.get("notsoslow", {})
+        fastapi_scope = request.scope.get("notslowapi", {})
         context = fastapi_scope.get("effective_route_context")
         return {
             "source": "fallback",
@@ -744,11 +752,11 @@ def test_included_starlette_host_keeps_prefix_runtime_and_url_path_for():
 
 
 def test_restore_fastapi_scope_key_ignores_non_dict_fastapi_scope():
-    scope = {"notsoslow": "not-a-dict"}
+    scope = {"notslowapi": "not-a-dict"}
 
     _restore_fastapi_scope_key(scope, "effective_route_context", object())
 
-    assert scope == {"notsoslow": "not-a-dict"}
+    assert scope == {"notslowapi": "not-a-dict"}
 
 
 @pytest.mark.anyio
@@ -781,7 +789,7 @@ async def test_included_api_route_without_app_scope_returns_405_response():
         "scheme": "http",
         "query_string": b"",
         "headers": [],
-        "notsoslow": {"effective_route_context": effective_context},
+        "notslowapi": {"effective_route_context": effective_context},
     }
 
     await route.handle(scope, receive, send)
@@ -891,7 +899,7 @@ async def test_included_unknown_route_is_ignored_and_can_return_default_404():
         "scheme": "http",
         "query_string": b"",
         "headers": [],
-        "notsoslow": {},
+        "notslowapi": {},
     }
 
     await included_router._handle_selected(scope, receive, send)

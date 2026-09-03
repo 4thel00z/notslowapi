@@ -1,9 +1,9 @@
 from base64 import b64encode
 
-from notsoslow import FastAPI, Security
-from notsoslow.security import HTTPBasic, HTTPBasicCredentials
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Security
+from notslowapi.security import HTTPBasic, HTTPBasicCredentials
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

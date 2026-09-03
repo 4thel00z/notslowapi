@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from notsoslow import Cookie, FastAPI
+from notslowapi import Cookie, FastAPI
 
 app = FastAPI()
 

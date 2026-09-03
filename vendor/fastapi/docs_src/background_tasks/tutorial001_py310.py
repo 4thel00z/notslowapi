@@ -1,4 +1,4 @@
-from notsoslow import BackgroundTasks, FastAPI
+from notslowapi import BackgroundTasks, FastAPI
 
 app = FastAPI()
 

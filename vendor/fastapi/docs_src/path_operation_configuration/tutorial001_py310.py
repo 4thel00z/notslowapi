@@ -1,4 +1,4 @@
-from notsoslow import FastAPI, status
+from notslowapi import FastAPI, status
 from pydantic import BaseModel
 
 app = FastAPI()

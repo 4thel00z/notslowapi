@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Annotated
 
 import pytest
-from notsoslow import FastAPI, File, Form
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI, File, Form
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

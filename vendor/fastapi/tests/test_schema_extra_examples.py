@@ -1,8 +1,8 @@
 import pytest
-from notsoslow import Body, Cookie, FastAPI, Header, Path, Query
-from notsoslow.exceptions import FastAPIDeprecationWarning
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import Body, Cookie, FastAPI, Header, Path, Query
+from notslowapi.exceptions import FastAPIDeprecationWarning
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel, ConfigDict
 
 

@@ -2,10 +2,10 @@
 
 from typing import Annotated
 
-from notsoslow import APIRouter, Depends, FastAPI, Security
-from notsoslow.security import OAuth2AuthorizationCodeBearer
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import APIRouter, Depends, FastAPI, Security
+from notslowapi.security import OAuth2AuthorizationCodeBearer
+from notslowapi.testclient import TestClient
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl="authorize",

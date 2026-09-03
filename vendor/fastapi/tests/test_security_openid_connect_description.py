@@ -1,7 +1,7 @@
-from notsoslow import Depends, FastAPI, Security
-from notsoslow.security.open_id_connect_url import OpenIdConnect
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import Depends, FastAPI, Security
+from notslowapi.security.open_id_connect_url import OpenIdConnect
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 app = FastAPI()

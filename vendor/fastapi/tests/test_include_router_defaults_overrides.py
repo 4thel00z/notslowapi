@@ -1,10 +1,10 @@
 import warnings
 
 import pytest
-from notsoslow import APIRouter, Depends, FastAPI, Response
-from notsoslow.responses import JSONResponse
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import APIRouter, Depends, FastAPI, Response
+from notslowapi.responses import JSONResponse
+from notslowapi.testclient import TestClient
 
 
 class ResponseLevel0(JSONResponse):

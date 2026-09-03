@@ -1,6 +1,6 @@
 from typing import Any
 
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()

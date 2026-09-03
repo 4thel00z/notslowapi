@@ -1,9 +1,9 @@
 from typing import Annotated
 
 import pytest
-from notsoslow import APIRouter, FastAPI, Query
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import APIRouter, FastAPI, Query
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

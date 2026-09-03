@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import Depends, FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

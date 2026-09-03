@@ -2,8 +2,8 @@ import importlib
 
 import pytest
 from dirty_equals import IsList
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 from ...utils import needs_py310
 

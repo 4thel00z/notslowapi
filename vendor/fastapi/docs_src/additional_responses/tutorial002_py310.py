@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.responses import FileResponse
+from notslowapi import FastAPI
+from notslowapi.responses import FileResponse
 from pydantic import BaseModel
 
 

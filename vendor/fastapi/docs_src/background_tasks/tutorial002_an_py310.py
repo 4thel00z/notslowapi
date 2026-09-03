@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from notsoslow import BackgroundTasks, Depends, FastAPI
+from notslowapi import BackgroundTasks, Depends, FastAPI
 
 app = FastAPI()
 

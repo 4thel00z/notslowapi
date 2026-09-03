@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterable, Iterable
 
-from notsoslow import FastAPI
-from notsoslow.responses import StreamingResponse
+from notslowapi import FastAPI
+from notslowapi.responses import StreamingResponse
 
 app = FastAPI()
 

@@ -1,6 +1,6 @@
 import inspect
 
-from notsoslow import APIRouter, FastAPI
+from notslowapi import APIRouter, FastAPI
 
 method_names = ["get", "put", "post", "delete", "options", "head", "patch", "trace"]
 

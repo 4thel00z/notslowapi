@@ -1,7 +1,7 @@
 from a2wsgi import WSGIMiddleware
-from notsoslow import FastAPI
 from flask import Flask, request
 from markupsafe import escape
+from notslowapi import FastAPI
 
 flask_app = Flask(__name__)
 

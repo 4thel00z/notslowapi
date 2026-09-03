@@ -1,5 +1,5 @@
 import uvicorn
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 app = FastAPI()
 

@@ -1,10 +1,10 @@
 from typing import Annotated
 
 import pytest
-from notsoslow import FastAPI, Form
-from notsoslow.exceptions import FastAPIDeprecationWarning
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Form
+from notslowapi.exceptions import FastAPIDeprecationWarning
+from notslowapi.testclient import TestClient
 
 from .utils import needs_py310
 

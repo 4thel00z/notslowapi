@@ -1,7 +1,7 @@
 import pytest
-from notsoslow import FastAPI
-from notsoslow.exceptions import ResponseValidationError
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.exceptions import ResponseValidationError
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 app = FastAPI()

@@ -1,10 +1,10 @@
 import warnings
 
 import pytest
-from notsoslow import FastAPI
-from notsoslow.exceptions import FastAPIDeprecationWarning
-from notsoslow.responses import ORJSONResponse, UJSONResponse  # ty: ignore[deprecated]
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.exceptions import FastAPIDeprecationWarning
+from notslowapi.responses import ORJSONResponse, UJSONResponse  # ty: ignore[deprecated]
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 from tests.utils import needs_orjson, needs_ujson

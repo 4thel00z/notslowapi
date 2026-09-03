@@ -1,4 +1,4 @@
-from notsoslow import APIRouter, Depends, HTTPException
+from notslowapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_token_header
 

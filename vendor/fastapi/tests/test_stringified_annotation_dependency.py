@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Annotated
 
 import pytest
-from notsoslow import Depends, FastAPI
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import Depends, FastAPI
+from notslowapi.testclient import TestClient
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import AsyncGenerator

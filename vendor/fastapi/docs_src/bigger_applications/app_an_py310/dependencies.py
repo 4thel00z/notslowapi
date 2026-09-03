@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from notsoslow import Header, HTTPException
+from notslowapi import Header, HTTPException
 
 
 async def get_token_header(x_token: Annotated[str, Header()]):

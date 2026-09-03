@@ -3,8 +3,8 @@ import sys
 
 import pytest
 from dirty_equals import IsAnyStr
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 from pydantic import ValidationError
 from pytest import MonkeyPatch
 

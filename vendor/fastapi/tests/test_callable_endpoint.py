@@ -1,7 +1,7 @@
 from functools import partial
 
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 
 
 def main(some_arg, q: str | None = None):

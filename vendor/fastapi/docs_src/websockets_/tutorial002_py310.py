@@ -1,4 +1,4 @@
-from notsoslow import (
+from notslowapi import (
     Cookie,
     Depends,
     FastAPI,
@@ -7,7 +7,7 @@ from notsoslow import (
     WebSocketException,
     status,
 )
-from notsoslow.responses import HTMLResponse
+from notslowapi.responses import HTMLResponse
 
 app = FastAPI()
 

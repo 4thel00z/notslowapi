@@ -3,8 +3,8 @@ from types import ModuleType
 from unittest.mock import patch
 
 import pytest
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 from ...utils import needs_py310
 

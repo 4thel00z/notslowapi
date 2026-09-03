@@ -3,8 +3,8 @@ import importlib
 import json
 
 import pytest
-from notsoslow import Request
-from notsoslow.testclient import TestClient
+from notslowapi import Request
+from notslowapi.testclient import TestClient
 
 from tests.utils import needs_py310
 

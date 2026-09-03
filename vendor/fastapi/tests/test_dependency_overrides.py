@@ -1,6 +1,6 @@
 import pytest
-from notsoslow import APIRouter, Depends, FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, Depends, FastAPI
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

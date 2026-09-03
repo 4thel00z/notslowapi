@@ -1,11 +1,10 @@
 [project]
-name = "notslowapi"
+name = "notslowapi-bench"
 version = "0.0.0"
 description = "Where does FastAPI spend its time"
 requires-python = ">=3.13"
 dependencies = [
-    "notsoslow",
-    "starlette",
+    "notslowapi",
     "uvicorn[standard]>=0.34",
     "pyinstrument>=5",
     "orjson>=3",
@@ -47,8 +46,7 @@ test = [
 ]
 
 [tool.uv.sources]
-notsoslow = { path = "vendor/fastapi", editable = true }
-starlette = { path = "vendor/starlette", editable = true }
+notslowapi = { path = "vendor/fastapi", editable = true }
 
 [tool.ruff]
 line-length = 100

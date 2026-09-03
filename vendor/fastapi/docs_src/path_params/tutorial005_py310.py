@@ -1,6 +1,6 @@
 from enum import Enum
 
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 
 class ModelName(str, Enum):

@@ -1,7 +1,7 @@
-from notsoslow import FastAPI, Request
-from notsoslow.responses import HTMLResponse
-from notsoslow.staticfiles import StaticFiles
-from notsoslow.templating import Jinja2Templates
+from notslowapi import FastAPI, Request
+from notslowapi.responses import HTMLResponse
+from notslowapi.staticfiles import StaticFiles
+from notslowapi.templating import Jinja2Templates
 
 app = FastAPI()
 

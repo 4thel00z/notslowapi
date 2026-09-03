@@ -5,8 +5,8 @@ from typing import Annotated, Any
 from unittest.mock import Mock, patch
 
 import pytest
-from notsoslow import Depends, FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI
+from notslowapi.testclient import TestClient
 
 
 @pytest.fixture(

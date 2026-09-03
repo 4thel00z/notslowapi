@@ -1,7 +1,7 @@
-from notsoslow import FastAPI, Security
-from notsoslow.security.http import HTTPAuthorizationCredentials, HTTPBase
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Security
+from notslowapi.security.http import HTTPAuthorizationCredentials, HTTPBase
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

@@ -1,6 +1,6 @@
-from notsoslow.routing import APIRoute
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.routing import APIRoute
+from notslowapi.testclient import TestClient
 
 from docs_src.openapi_webhooks.tutorial001_py310 import app
 

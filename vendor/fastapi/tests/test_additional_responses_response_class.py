@@ -1,7 +1,7 @@
-from notsoslow import FastAPI
-from notsoslow.responses import JSONResponse
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI
+from notslowapi.responses import JSONResponse
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 app = FastAPI()

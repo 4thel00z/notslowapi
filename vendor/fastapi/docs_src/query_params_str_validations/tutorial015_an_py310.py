@@ -1,7 +1,7 @@
 import random
 from typing import Annotated
 
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 from pydantic import AfterValidator
 
 app = FastAPI()

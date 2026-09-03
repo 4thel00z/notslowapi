@@ -1,7 +1,7 @@
-from notsoslow import FastAPI, HTTPException
-from notsoslow.exceptions import RequestValidationError
-from notsoslow.responses import PlainTextResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from notslowapi import FastAPI, HTTPException
+from notslowapi.exceptions import RequestValidationError
+from notslowapi.responses import PlainTextResponse
+from notslowapi.starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
 

@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import FastAPI, Form
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI, Form
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
 app = FastAPI()

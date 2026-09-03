@@ -1,5 +1,5 @@
-from notsoslow import APIRouter, FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, FastAPI
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

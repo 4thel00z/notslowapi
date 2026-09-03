@@ -4,9 +4,9 @@
 # https://github.com/fastapi/fastapi/issues/14247
 from enum import Enum
 
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
 

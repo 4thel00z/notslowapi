@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from notsoslow import FastAPI
-from notsoslow.encoders import jsonable_encoder
+from notslowapi import FastAPI
+from notslowapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
 fake_db = {}

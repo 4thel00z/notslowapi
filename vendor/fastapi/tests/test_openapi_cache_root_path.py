@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 
 
 def test_root_path_does_not_persist_across_requests():

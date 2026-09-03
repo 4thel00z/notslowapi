@@ -1,4 +1,4 @@
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight": False})
 

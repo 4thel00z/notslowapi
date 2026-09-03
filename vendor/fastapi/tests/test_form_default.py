@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import FastAPI, File, Form
-from starlette.testclient import TestClient
+from notslowapi import FastAPI, File, Form
+from notslowapi.starlette.testclient import TestClient
 
 app = FastAPI()
 

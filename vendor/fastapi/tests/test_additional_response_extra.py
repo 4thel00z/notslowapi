@@ -1,6 +1,6 @@
-from notsoslow import APIRouter, FastAPI
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import APIRouter, FastAPI
+from notslowapi.testclient import TestClient
 
 router = APIRouter()
 

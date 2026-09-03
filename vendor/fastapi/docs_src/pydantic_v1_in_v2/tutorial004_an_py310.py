@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import FastAPI
-from notsoslow.temp_pydantic_v1_params import Body
+from notslowapi import FastAPI
+from notslowapi.temp_pydantic_v1_params import Body
 from pydantic.v1 import BaseModel
 
 

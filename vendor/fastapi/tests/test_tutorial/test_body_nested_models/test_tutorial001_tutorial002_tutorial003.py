@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 from dirty_equals import IsList
-from notsoslow.testclient import TestClient
 from inline_snapshot import Is, snapshot
+from notslowapi.testclient import TestClient
 
 from ...utils import needs_py310
 

@@ -1,4 +1,4 @@
-from notsoslow import FastAPI, Path
+from notslowapi import FastAPI, Path
 
 app = FastAPI()
 

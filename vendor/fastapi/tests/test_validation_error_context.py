@@ -1,10 +1,10 @@
-from notsoslow import FastAPI, Request, WebSocket
-from notsoslow.exceptions import (
+from notslowapi import FastAPI, Request, WebSocket
+from notslowapi.exceptions import (
     RequestValidationError,
     ResponseValidationError,
     WebSocketRequestValidationError,
 )
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 

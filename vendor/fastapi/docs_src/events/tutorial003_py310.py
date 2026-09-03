@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 
 def fake_answer_to_everything_ml_model(x: float):

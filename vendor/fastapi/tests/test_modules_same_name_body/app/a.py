@@ -1,4 +1,4 @@
-from notsoslow import APIRouter, Body
+from notslowapi import APIRouter, Body
 
 router = APIRouter()
 

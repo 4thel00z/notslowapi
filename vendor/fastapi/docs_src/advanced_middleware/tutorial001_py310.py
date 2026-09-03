@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.middleware.httpsredirect import HTTPSRedirectMiddleware
+from notslowapi import FastAPI
+from notslowapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 app = FastAPI()
 

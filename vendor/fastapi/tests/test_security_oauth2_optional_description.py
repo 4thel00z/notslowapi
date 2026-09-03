@@ -1,8 +1,8 @@
 import pytest
-from notsoslow import Depends, FastAPI, Security
-from notsoslow.security import OAuth2, OAuth2PasswordRequestFormStrict
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import Depends, FastAPI, Security
+from notslowapi.security import OAuth2, OAuth2PasswordRequestFormStrict
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 app = FastAPI()

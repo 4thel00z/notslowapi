@@ -1,8 +1,8 @@
 from collections.abc import AsyncIterable
 from typing import Annotated
 
-from notsoslow import FastAPI, Header
-from notsoslow.sse import EventSourceResponse, ServerSentEvent
+from notslowapi import FastAPI, Header
+from notslowapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel
 
 app = FastAPI()

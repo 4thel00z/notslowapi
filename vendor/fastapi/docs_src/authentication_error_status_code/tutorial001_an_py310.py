@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from notsoslow import Depends, FastAPI, HTTPException, status
-from notsoslow.security import HTTPAuthorizationCredentials, HTTPBearer
+from notslowapi import Depends, FastAPI, HTTPException, status
+from notslowapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 app = FastAPI()
 

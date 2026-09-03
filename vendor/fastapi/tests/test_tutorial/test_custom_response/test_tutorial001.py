@@ -1,8 +1,8 @@
 import importlib
 
 import pytest
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 pytest.importorskip("orjson")
 
@@ -19,14 +19,14 @@ def get_client(request: pytest.FixtureRequest):
     return client
 
 
-@pytest.mark.filterwarnings("ignore::notsoslow.exceptions.FastAPIDeprecationWarning")
+@pytest.mark.filterwarnings("ignore::notslowapi.exceptions.FastAPIDeprecationWarning")
 def test_get_custom_response(client: TestClient):
     response = client.get("/items/")
     assert response.status_code == 200, response.text
     assert response.json() == [{"item_id": "Foo"}]
 
 
-@pytest.mark.filterwarnings("ignore::notsoslow.exceptions.FastAPIDeprecationWarning")
+@pytest.mark.filterwarnings("ignore::notslowapi.exceptions.FastAPIDeprecationWarning")
 def test_openapi_schema(client: TestClient):
     response = client.get("/openapi.json")
     assert response.status_code == 200, response.text

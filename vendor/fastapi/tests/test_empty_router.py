@@ -1,7 +1,7 @@
 import pytest
-from notsoslow import APIRouter, FastAPI
-from notsoslow.exceptions import FastAPIError
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, FastAPI
+from notslowapi.exceptions import FastAPIError
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 

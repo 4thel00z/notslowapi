@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from notsoslow import FastAPI
+from notslowapi import FastAPI
 
 
 @dataclass

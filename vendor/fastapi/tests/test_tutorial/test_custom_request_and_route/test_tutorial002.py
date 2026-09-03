@@ -2,7 +2,7 @@ import importlib
 
 import pytest
 from dirty_equals import IsOneOf
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 from tests.utils import needs_py310
 

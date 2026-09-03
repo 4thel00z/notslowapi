@@ -1,5 +1,5 @@
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 from docs_src.path_params.tutorial005_py310 import app
 

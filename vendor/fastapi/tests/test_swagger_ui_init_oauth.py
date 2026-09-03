@@ -1,5 +1,5 @@
-from notsoslow import FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.testclient import TestClient
 
 swagger_ui_init_oauth = {"clientId": "the-foo-clients", "appName": "The Predendapp"}
 

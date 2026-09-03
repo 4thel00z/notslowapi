@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from notsoslow import Depends, FastAPI
+from notslowapi import Depends, FastAPI
 
 app = FastAPI()
 

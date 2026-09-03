@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from notsoslow import Depends, FastAPI, Request
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI, Request
+from notslowapi.testclient import TestClient
 
 from .utils import needs_py310
 

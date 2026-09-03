@@ -2,12 +2,12 @@ import asyncio
 import time
 from collections.abc import AsyncIterable, Iterable
 
-import notsoslow.routing
+import notslowapi.routing
 import pytest
-from notsoslow import APIRouter, FastAPI
-from notsoslow.responses import EventSourceResponse
-from notsoslow.sse import ServerSentEvent, format_sse_event
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, FastAPI
+from notslowapi.responses import EventSourceResponse
+from notslowapi.sse import ServerSentEvent, format_sse_event
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 
@@ -343,7 +343,7 @@ def slow_sync_stream():
 
 
 def test_keepalive_ping_async(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(notsoslow.routing, "_PING_INTERVAL", 0.05)
+    monkeypatch.setattr(notslowapi.routing, "_PING_INTERVAL", 0.05)
     with TestClient(keepalive_app) as c:
         response = c.get("/slow-async")
     assert response.status_code == 200
@@ -355,7 +355,7 @@ def test_keepalive_ping_async(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_keepalive_ping_sync(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(notsoslow.routing, "_PING_INTERVAL", 0.05)
+    monkeypatch.setattr(notslowapi.routing, "_PING_INTERVAL", 0.05)
     with TestClient(keepalive_app) as c:
         response = c.get("/slow-sync")
     assert response.status_code == 200

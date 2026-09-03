@@ -2,9 +2,9 @@ from typing import Annotated
 
 import pytest
 from dirty_equals import AnyThing, IsOneOf, IsPartialDict
-from notsoslow import FastAPI, Header
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Header
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
 app = FastAPI()

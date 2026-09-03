@@ -2,8 +2,8 @@ import importlib
 import json
 
 import pytest
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi.testclient import TestClient
 
 
 @pytest.fixture(

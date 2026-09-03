@@ -1,10 +1,10 @@
-from notsoslow import FastAPI, HTTPException
-from notsoslow.exception_handlers import (
+from notslowapi import FastAPI, HTTPException
+from notslowapi.exception_handlers import (
     http_exception_handler,
     request_validation_exception_handler,
 )
-from notsoslow.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from notslowapi.exceptions import RequestValidationError
+from notslowapi.starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
 

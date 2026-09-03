@@ -1,5 +1,5 @@
-from notsoslow import Cookie, FastAPI, Header, Query
-from notsoslow.testclient import TestClient
+from notslowapi import Cookie, FastAPI, Header, Query
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 app = FastAPI()

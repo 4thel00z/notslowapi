@@ -1,8 +1,8 @@
 import json
 from typing import AsyncIterable, Iterable  # noqa: UP035 to test coverage
 
-from notsoslow import APIRouter, FastAPI
-from notsoslow.testclient import TestClient
+from notslowapi import APIRouter, FastAPI
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 

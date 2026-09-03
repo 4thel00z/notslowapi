@@ -3,7 +3,7 @@ import subprocess
 import sys
 from unittest.mock import patch
 
-import notsoslow.cli
+import notslowapi.cli
 import pytest
 
 
@@ -15,7 +15,7 @@ def test_fastapi_cli():
             "coverage",
             "run",
             "-m",
-            "notsoslow",
+            "notslowapi",
             "dev",
             "non_existent_file.py",
         ],
@@ -28,7 +28,7 @@ def test_fastapi_cli():
 
 
 def test_fastapi_cli_not_installed():
-    with patch.object(notsoslow.cli, "cli_main", None):
+    with patch.object(notslowapi.cli, "cli_main", None):
         with pytest.raises(RuntimeError) as exc_info:
-            notsoslow.cli.main()
+            notslowapi.cli.main()
         assert "To use the fastapi command, please install" in str(exc_info.value)

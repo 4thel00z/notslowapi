@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
-from notsoslow import FastAPI
-from notsoslow.responses import JSONResponse
-from notsoslow.testclient import TestClient
+from notslowapi import FastAPI
+from notslowapi.responses import JSONResponse
+from notslowapi.testclient import TestClient
 from pydantic import BaseModel
 
 

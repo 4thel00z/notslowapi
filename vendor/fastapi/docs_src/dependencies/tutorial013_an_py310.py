@@ -1,8 +1,8 @@
 import time
 from typing import Annotated
 
-from notsoslow import Depends, FastAPI, HTTPException
-from notsoslow.responses import StreamingResponse
+from notslowapi import Depends, FastAPI, HTTPException
+from notslowapi.responses import StreamingResponse
 from sqlmodel import Field, Session, SQLModel, create_engine
 
 engine = create_engine("postgresql+psycopg://postgres:postgres@localhost/db")

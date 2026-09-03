@@ -7,12 +7,12 @@ from collections.abc import Awaitable, Callable, MutableMapping
 from pathlib import Path
 from typing import Any
 
-from notsoslow import APIRouter, FastAPI
+from notslowapi import APIRouter, FastAPI
 from pydantic import BaseModel
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-from starlette.routing import Route
+from notslowapi.starlette.applications import Starlette
+from notslowapi.starlette.requests import Request
+from notslowapi.starlette.responses import JSONResponse
+from notslowapi.starlette.routing import Route
 
 Scope = MutableMapping[str, Any]
 Message = MutableMapping[str, Any]

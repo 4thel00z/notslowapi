@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 import pytest
-from notsoslow.testclient import TestClient
+from notslowapi.testclient import TestClient
 
 from tests.utils import needs_py310, workdir_lock
 

@@ -1,7 +1,7 @@
-from notsoslow import Depends, FastAPI
-from notsoslow.requests import HTTPConnection
-from notsoslow.testclient import TestClient
-from starlette.websockets import WebSocket
+from notslowapi import Depends, FastAPI
+from notslowapi.requests import HTTPConnection
+from notslowapi.starlette.websockets import WebSocket
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 app.state.value = 42

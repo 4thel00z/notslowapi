@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterable
 
-from notsoslow import FastAPI
-from notsoslow.sse import EventSourceResponse, ServerSentEvent
+from notslowapi import FastAPI
+from notslowapi.sse import EventSourceResponse, ServerSentEvent
 
 app = FastAPI()
 

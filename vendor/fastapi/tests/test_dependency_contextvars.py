@@ -2,8 +2,8 @@ from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from typing import Any
 
-from notsoslow import Depends, FastAPI, Request, Response
-from notsoslow.testclient import TestClient
+from notslowapi import Depends, FastAPI, Request, Response
+from notslowapi.testclient import TestClient
 
 legacy_request_state_context_var: ContextVar[dict[str, Any] | None] = ContextVar(
     "legacy_request_state_context_var", default=None

@@ -1,6 +1,6 @@
-from notsoslow import FastAPI, Request
-from notsoslow.testclient import TestClient
 from inline_snapshot import snapshot
+from notslowapi import FastAPI, Request
+from notslowapi.testclient import TestClient
 
 app = FastAPI(openapi_prefix="/api/v1")
 

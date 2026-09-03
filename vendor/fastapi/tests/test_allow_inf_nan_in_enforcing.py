@@ -1,8 +1,8 @@
 from typing import Annotated
 
 import pytest
-from notsoslow import Body, FastAPI, Query
-from notsoslow.testclient import TestClient
+from notslowapi import Body, FastAPI, Query
+from notslowapi.testclient import TestClient
 
 app = FastAPI()
 
