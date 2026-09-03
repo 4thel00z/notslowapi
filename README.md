@@ -73,6 +73,8 @@ One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5
 
 \* This rung did not exist in `results_ladder_v1.json`. The 92.2 µs is the before-run of the include_router change (`bench/baseline/results_fix11_before.json`), measured on a tree that already had the first ten changes, so it understates the day-one gap.
 
+Since that ladder, four more changes shipped (see [What changed](https://notslowapi.com/docs/what-changed/)): in same-window comparisons of the v4 tree against the current master, the pydantic body route is another 10 percent faster (fix 38, `bench/baseline/results_fix38_*.json`) and the three-dependency route 5 percent (fixes 40 and 41); the other rows are unchanged within noise. The table is refreshed from a full ladder only when the machine is idle on AC power, so those two rows understate the current tree.
+
 The before/after figures in the next section are same-window runs from the commit messages. They differ from the full-ladder figures above by a few percent, as [Benchmark method](https://notslowapi.com/docs/benchmarks-method/) explains.
 
 ## What changed

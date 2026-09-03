@@ -41,6 +41,8 @@ Staying on uvicorn: 2.0x the requests per core on the plain route, 3.1x on typed
 
 \* This rung did not exist on day one. The 92.2 µs is the before-run of the include_router change (`results_fix11_before.json`), taken on a tree that already had the first ten changes, so it understates the day-one gap. How the runs were taken is in [Benchmark method](benchmarks-method.md).
 
+Since that ladder, four more changes shipped (see [What changed](what-changed.md)): in same-window comparisons of the v4 tree against the current master, the pydantic body route is another 10 percent faster and the three-dependency route 5 percent; the other rows are unchanged within noise. The table is refreshed from a full ladder only when the machine is idle on AC power.
+
 ## Pages
 
 - [Install](install.md): uv, pip, extras, Python versions
