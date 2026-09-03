@@ -60,7 +60,9 @@ from notslowapi.dependencies.utils import (
     _get_body_field,
     _get_flat_body_params,
     _should_embed_body_fields,
+    compile_param_specs,
     dependant_has_generator_dependencies,
+    extract_params,
     get_dependant,
     get_parameterless_sub_dependant,
     get_stream_item_type,
@@ -92,7 +94,7 @@ from notslowapi.starlette._exception_handler import (
 )
 from notslowapi.starlette._utils import get_route_path, is_async_callable
 from notslowapi.starlette.concurrency import iterate_in_threadpool, run_in_threadpool
-from notslowapi.starlette.datastructures import URL, FormData, URLPath
+from notslowapi.starlette.datastructures import URL, FormData, QueryParams, URLPath
 from notslowapi.starlette.exceptions import HTTPException
 from notslowapi.starlette.requests import Request
 from notslowapi.starlette.responses import (
@@ -425,6 +427,92 @@ def plain_route_app(parts: PlainHandlerParts) -> ASGIApp:
     return app
 
 
+@dataclass(frozen=True)
+class ParamsHandlerParts:
+    """What params_route_app needs for a coroutine endpoint with only path and query params.
+
+    specs come from compile_param_specs; respond and serialize are the trivial ones since
+    no Response or BackgroundTasks parameter can take part.
+    """
+
+    specs: tuple[Any, ...]
+    has_query: bool
+    call: Callable[..., Awaitable[Any]]
+    respond: Callable[[Any, Scope], Response]
+    serialize: Callable[[Any, Scope], bytes] | None
+    status_code: int
+    body_allowed: bool
+    with_content_length: bool
+    endpoint_context: Callable[[Scope], EndpointContext]
+
+
+def params_route_app(parts: ParamsHandlerParts) -> ASGIApp:
+    """plain_route_app without the solver: path and query params read straight from the scope.
+
+    The Request object is built only when an exception needs it.
+    """
+    specs = parts.specs
+    has_query = parts.has_query
+    call = parts.call
+    respond = parts.respond
+    serialize = parts.serialize
+    status_code = parts.status_code
+    body_allowed = parts.body_allowed
+    with_content_length = parts.with_content_length
+    endpoint_context = parts.endpoint_context
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        try:
+            values, errors = extract_params(
+                specs,
+                scope.get("path_params") or {},
+                QueryParams(scope["query_string"]) if has_query else None,
+            )
+            if errors:
+                raise RequestValidationError(
+                    errors, body=None, endpoint_ctx=endpoint_context(scope)
+                )
+            raw_response = await call(**values)
+            if isinstance(raw_response, Response):
+                await raw_response(scope, receive, sender)
+                return
+            if serialize is None:
+                await respond(raw_response, scope)(scope, receive, sender)
+                return
+            body = serialize(raw_response, scope)
+            if not body_allowed:
+                body = b""
+            if with_content_length:
+                headers = [
+                    (b"content-length", b"%d" % len(body)),
+                    JSON_CONTENT_TYPE_HEADER,
+                ]
+            else:
+                headers = [JSON_CONTENT_TYPE_HEADER]
+            tracker[0] = True
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": status_code,
+                    "headers": headers,
+                }
+            )
+            await send({"type": "http.response.body", "body": body})
+        except Exception as exc:
+            await send_route_exception_response(
+                exc, Request(scope, receive, send), scope, receive, sender, tracker
+            )
+
+    return app
+
+
 def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGIApp:
     """The ASGI app for a route: the one-frame variant when no exit stack can ever be needed.
 
@@ -438,6 +526,8 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
     parts = getattr(handler, "parts", None)
     if isinstance(parts, TrivialHandlerParts):
         return trivial_route_app(parts)
+    if isinstance(parts, ParamsHandlerParts):
+        return params_route_app(parts)
     if isinstance(parts, PlainHandlerParts):
         return plain_route_app(parts)
     return trivial_request_response(handler)
@@ -999,24 +1089,40 @@ def get_request_handler(
             )
             return build_response(content, solved)
 
-        plain_app.parts = PlainHandlerParts(  # type: ignore[attr-defined]
-            solve=functools.partial(
-                solve_dependencies,
-                dependant=dependant,
-                body=None,
-                dependency_overrides_provider=dependency_overrides_provider,
-                embed_body_fields=embed_body_fields,
-            ),
-            call=call,
-            respond=respond_plain,
-            serialize=serialize_trivial,
-            status_code=trivial_status,
-            body_allowed=is_body_allowed_for_status_code(trivial_status),
-            with_content_length=not (
-                trivial_status < 200 or trivial_status in (204, 304)
-            ),
-            endpoint_context=endpoint_context_for_scope,
-        )
+        param_specs = compile_param_specs(dependant)
+        if param_specs is not None:
+            plain_app.parts = ParamsHandlerParts(  # type: ignore[attr-defined]
+                specs=param_specs,
+                has_query=bool(dependant.query_params),
+                call=call,
+                respond=respond_trivial,
+                serialize=serialize_trivial,
+                status_code=trivial_status,
+                body_allowed=is_body_allowed_for_status_code(trivial_status),
+                with_content_length=not (
+                    trivial_status < 200 or trivial_status in (204, 304)
+                ),
+                endpoint_context=endpoint_context_for_scope,
+            )
+        else:
+            plain_app.parts = PlainHandlerParts(  # type: ignore[attr-defined]
+                solve=functools.partial(
+                    solve_dependencies,
+                    dependant=dependant,
+                    body=None,
+                    dependency_overrides_provider=dependency_overrides_provider,
+                    embed_body_fields=embed_body_fields,
+                ),
+                call=call,
+                respond=respond_plain,
+                serialize=serialize_trivial,
+                status_code=trivial_status,
+                body_allowed=is_body_allowed_for_status_code(trivial_status),
+                with_content_length=not (
+                    trivial_status < 200 or trivial_status in (204, 304)
+                ),
+                endpoint_context=endpoint_context_for_scope,
+            )
 
     if not body_field and not is_sse_stream and not is_json_stream and not is_generator:
         if dependant_is_trivial(dependant):
