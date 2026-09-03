@@ -49,6 +49,12 @@ Every route was matched in order; an index per routes version now maps each stat
 - l5b_fastapi_50routes_included: 92.2 → 31.7 (10.8k → 31.6k req/s), then 31.7 → 29.8
 - l2c_fastapi_included: 26.8 → 23.1; l2_fastapi_dict: 17.8 → 17.1
 
+## Route index by literal prefix
+
+The route index put every dynamic route into every static path's candidate list, so an app declaring `/p0/{item_id}` … `/p9/{item_id}` before forty static routes regex-tested all ten on each request for a static path. A route's regex is anchored and starts with the literal before its first parameter, so a dynamic route now joins only the buckets whose path starts with that literal; declaration order inside a bucket is unchanged and `Mount`, `Host` and custom routes stay candidates everywhere.
+
+- l1c_starlette_50routes: 19.7 → 16.9; l5_fastapi_50routes: 22.1 → 18.3 (45.2k → 54.6k req/s); l5b_fastapi_50routes_included: 26.3 → 21.2
+
 ## Starlette vendored
 
 The last commit moves the modified Starlette into the package as `notslowapi.starlette` and drops the PyPI `starlette` dependency; ladder check afterwards: l2 17.8 and l3 22.3 against 17.1 and 22.4, within noise.
