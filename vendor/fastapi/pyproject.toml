@@ -5,13 +5,16 @@ build-backend = "pdm.backend"
 [project]
 name = "notslowapi"
 dynamic = ["version"]
-description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
+description = "FastAPI, minus the slow. A fork of FastAPI that does less work per request, with the same API and test suite."
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "notslowapi/starlette/LICENSE.md"]
 requires-python = ">=3.10"
 authors = [
     { name = "Sebastián Ramírez", email = "tiangolo@gmail.com" },
+]
+maintainers = [
+    { name = "4thel00z" },
 ]
 classifiers = [
     "Intended Audience :: Information Technology",
@@ -50,19 +53,18 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/fastapi/fastapi"
-Documentation = "https://fastapi.tiangolo.com/"
-Repository = "https://github.com/fastapi/fastapi"
-Issues = "https://github.com/fastapi/fastapi/issues"
-Changelog = "https://fastapi.tiangolo.com/release-notes/"
+Homepage = "https://notslowapi.com"
+Documentation = "https://notslowapi.com/docs/"
+Benchmarks = "https://notslowapi.com/benchmarks/"
+Repository = "https://github.com/4thel00z/notslowapi"
+Issues = "https://github.com/4thel00z/notslowapi/issues"
+Changelog = "https://github.com/4thel00z/notslowapi/releases"
 
 [project.optional-dependencies]
 granian = [
     "granian>=2.0",
 ]
 standard = [
-    "fastapi-cli[standard] >=0.0.32",
-    "fastar >= 0.9.0",
     # For the test client
     "httpx >=0.23.0,<1.0.0",
     # For templates
@@ -79,26 +81,8 @@ standard = [
     "pydantic-extra-types >=2.0.0",
 ]
 
-standard-no-fastapi-cloud-cli = [
-    "fastapi-cli[standard-no-fastapi-cloud-cli] >=0.0.32",
-    # For the test client
-    "httpx >=0.23.0,<1.0.0",
-    # For templates
-    "jinja2 >=3.1.5",
-    # For forms and file uploads
-    "python-multipart >=0.0.18",
-    # To validate email fields
-    "email-validator >=2.0.0",
-    # Uvicorn with uvloop
-    "uvicorn[standard] >=0.12.0",
-    # # Settings management
-    "pydantic-settings >=2.0.0",
-    # # Extra Pydantic data types
-    "pydantic-extra-types >=2.0.0",
-]
 
 all = [
-    "fastapi-cli[standard] >=0.0.32",
     # # For the test client
     "httpx >=0.23.0,<1.0.0",
     # For templates

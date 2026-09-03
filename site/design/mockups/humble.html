@@ -6,7 +6,6 @@
 <title>notslowapi</title>
 <meta name="description" content="notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same 4,489 tests, drop-in.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500&family=Fragment+Mono&family=Geist:wght@400..500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -251,7 +250,7 @@ pre{margin:0;font-size:13px;line-height:1.55;overflow-x:auto;white-space:pre}
   <div class="frame cells hero">
     <div class="hero-copy">
       <h1 data-reveal>Same code. Fewer microseconds.</h1>
-      <p class="lead">notslowapi is a fork of FastAPI made faster, measured layer by layer. Change one import and keep your app, your 4,489 tests and your team. On one core, a plain JSON route serves <b>114,000 requests a second</b> under granian against 32,000 for FastAPI 0.141 on uvicorn: <b>3.6x the throughput</b>.</p>
+      <p class="lead">notslowapi is a fork of FastAPI made faster, measured layer by layer. Change one import and keep your app, your tests and your team. On one core, a plain JSON route serves <b>114,000 requests a second</b> under granian against 32,000 for FastAPI 0.141 on uvicorn: <b>3.6x the throughput</b>.</p>
       <div class="ctas">
         <a class="btn btn-primary" href="#switch">Switch in a minute</a>
         <a class="btn btn-ghost" href="#numbers">Read the benchmarks</a>
@@ -315,7 +314,7 @@ pre{margin:0;font-size:13px;line-height:1.55;overflow-x:auto;white-space:pre}
             </div>
           </div>
         </div>
-        <div class="card-foot">Time per request, as shipped. The fourth row is the one most real applications look like.</div>
+        <div class="card-foot">Time per request, as shipped. Bars share one scale with the card beside it.</div>
       </article>
       <article class="is-us">
         <div class="card-head">
@@ -450,7 +449,7 @@ pre{margin:0;font-size:13px;line-height:1.55;overflow-x:auto;white-space:pre}
   <div class="frame">
     <div class="sechead">
       <h2 data-reveal>What changed inside.</h2>
-      <p class="mono">No new language, no caching layer. The request path does less.</p>
+      <p class="mono">No new language. The request path does less.</p>
     </div>
     <div class="cells changes">
       <div class="cell"><h3>Parameter extraction</h3><p>Stopped introspecting type annotations on every request. The shape of an endpoint is known once, at startup.</p></div>
@@ -477,7 +476,7 @@ pre{margin:0;font-size:13px;line-height:1.55;overflow-x:auto;white-space:pre}
   <div class="frame">
     <div class="sechead">
       <h2 data-reveal>Deploy.</h2>
-      <p class="mono">The server is half the gain. Pick one and pass the right flags.</p>
+      <p class="mono">Pick one server and pass the right flags.</p>
     </div>
     <div class="cells deploy">
       <div class="cell rec">
@@ -488,7 +487,7 @@ pre{margin:0;font-size:13px;line-height:1.55;overflow-x:auto;white-space:pre}
       <div class="cell">
         <h3>If you stay on uvicorn</h3>
         <pre>uvicorn myapp:app <span class="nb">--no-proxy-headers</span> <span class="nb">--no-server-header</span> <span class="nb">--no-date-header</span></pre>
-        <p>Pass these three flags. They remove per-response work uvicorn does by default and that most deployments behind a proxy do not need.</p>
+        <p>Pass these three flags. Without them uvicorn adds work to every response that the granian line above does not.</p>
       </div>
     </div>
   </div>

@@ -58,12 +58,6 @@ repos:
           - --update-existing
         files: ^docs/en/docs/.*\.md$
 
-      - id: generate-readme
-        language: unsupported
-        name: generate README.md from index.md
-        entry: uv run ./scripts/docs.py generate-readme
-        files: ^docs/en/docs/index\.md|docs/en/data/sponsors\.yml|scripts/docs\.py$
-        pass_filenames: false
 
       - id: render-banner-sponsors
         language: unsupported
