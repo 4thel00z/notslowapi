@@ -24,9 +24,10 @@ Routes whose parameters are only path and query params still ran the general sol
 
 ## Dependency facts computed once
 
-A route with three `Depends` (one nested; a path param, a header and pagination query params arriving through them, the shape most applications have) cost twice the params route, and the profile showed work that is constant per dependant being redone on every request: the dependency cache key (`_uses_scopes` walking the sub-tree and unwrapping callables, `_get_computed_scope` re-running the generator checks), the coroutine and generator classification of each dependency, a `typing.cast(Callable[..., Any], …)` that builds a generic alias, and a throwaway `Response` for every route with dependencies. `Dependant` now caches its cache key, call kinds and whether any dependency takes a `Response`, and `solve_dependencies` uses them.
+A route with three `Depends` (one nested; a path param, a header and pagination query params arriving through them, the shape most applications have) cost twice the params route, and the profile showed work that is constant per dependant being redone on every request: the dependency cache key (`_uses_scopes` walking the sub-tree and unwrapping callables, `_get_computed_scope` re-running the generator checks), the coroutine and generator classification of each dependency, a `typing.cast(Callable[..., Any], …)` that builds a generic alias, and a throwaway `Response` for every route with dependencies. `Dependant` now caches its cache key, call kinds and whether any dependency takes a `Response`, and `solve_dependencies` uses them. Each dependant also compiles its parameter plan once (path, query, header and cookie params in the solver's order, with alias, multi-value and model flags), so the solver runs one extraction pass instead of four helper layers per parameter, and optional defaults are read from the field directly instead of through pydantic's `get_default` and a second `deepcopy`.
 
 - l6_fastapi_depends: 38.1 → 28.9 (26.2k → 34.6k req/s); on granian 29.6 → 19.8 (33.8k → 50.5k req/s)
+- l6_fastapi_depends: 29.0 → 27.3; on granian 19.5 → 18.1
 
 ## Exit stacks and middleware only where needed
 

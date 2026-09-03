@@ -682,30 +682,17 @@ async def solve_dependencies(
             values[sub_dependant.name] = solved
         if sub_dependant_cache_key not in dependency_cache:
             dependency_cache[sub_dependant_cache_key] = solved
-    if dependant.path_params:
-        path_values, path_errors = request_params_to_args(
-            dependant.path_params, request.path_params
+    plan = dependant_param_plan(dependant)
+    if plan.specs:
+        param_values, param_errors = extract_params(
+            plan.specs,
+            request.path_params if plan.needs_path else None,
+            request.query_params if plan.needs_query else None,
+            request.headers if plan.needs_headers else None,
+            request.cookies if plan.needs_cookies else None,
         )
-        values.update(path_values)
-        errors.extend(path_errors)
-    if dependant.query_params:
-        query_values, query_errors = request_params_to_args(
-            dependant.query_params, request.query_params
-        )
-        values.update(query_values)
-        errors.extend(query_errors)
-    if dependant.header_params:
-        header_values, header_errors = request_params_to_args(
-            dependant.header_params, request.headers
-        )
-        values.update(header_values)
-        errors.extend(header_errors)
-    if dependant.cookie_params:
-        cookie_values, cookie_errors = request_params_to_args(
-            dependant.cookie_params, request.cookies
-        )
-        values.update(cookie_values)
-        errors.extend(cookie_errors)
+        values.update(param_values)
+        errors.extend(param_errors)
     if dependant.body_params:
         (
             body_values,
@@ -749,7 +736,7 @@ def _validate_value_with_model_field(
         if field.required:
             return None, [get_missing_field_error(loc=loc)]
         else:
-            return deepcopy(field.default), []
+            return field_default_value(field), []
     return field.validate(value, values, loc=loc)
 
 
@@ -776,7 +763,7 @@ def _get_multidict_value(
     ):
         if field.required:
             return None
-        return deepcopy(field.default)
+        return field_default_value(field)
     return value
 
 
@@ -833,17 +820,91 @@ def request_params_to_model_arg(
     return {field.name: v_}, errors_
 
 
-ParamSpec = tuple[str, str, bool, bool, bool, ModelField]
-"""(name, alias, is_path, is_sequence, required, field): one simple path or query parameter."""
+ParamEntry = tuple[str, str, str, bool, bool, bool, bool, ModelField]
+"""(name, alias, location, multi, is_sequence, required, is_model, field): one path, query,
+header or cookie parameter. multi: read with getlist (a sequence field on a multidict source);
+is_model: the location's single pydantic-model field, extracted with request_params_to_model_arg.
+"""
 
 
-def compile_param_specs(dependant: Dependant) -> tuple[ParamSpec, ...] | None:
+@dataclass(frozen=True, slots=True)
+class ParamPlan:
+    """A dependant's parameter specs in the solver's order and the request sources they read."""
+
+    specs: tuple[ParamEntry, ...]
+    needs_path: bool
+    needs_query: bool
+    needs_headers: bool
+    needs_cookies: bool
+
+
+def json_marked(field: ModelField) -> bool:
+    from pydantic import Json
+
+    return any(type(item) is Json for item in field.field_info.metadata)
+
+
+def compile_param_plan(dependant: Dependant) -> ParamPlan:
+    """One spec per path, query, header and cookie parameter, in the order the solver read them."""
+    specs: list[ParamEntry] = []
+    for fields, location, multidict in (
+        (dependant.path_params, "path", False),
+        (dependant.query_params, "query", True),
+        (dependant.header_params, "header", True),
+        (dependant.cookie_params, "cookie", False),
+    ):
+        if len(fields) == 1 and fields[0].is_model:
+            field = fields[0]
+            specs.append(
+                (
+                    field.name,
+                    field.alias_for_validation,
+                    location,
+                    False,
+                    False,
+                    False,
+                    True,
+                    field,
+                )
+            )
+            continue
+        for field in fields:
+            multi = multidict and field.is_sequence and not json_marked(field)
+            specs.append(
+                (
+                    field.name,
+                    field.alias_for_validation,
+                    field.param_location or location,
+                    multi,
+                    field.is_sequence,
+                    field.field_info.is_required(),
+                    False,
+                    field,
+                )
+            )
+    return ParamPlan(
+        tuple(specs),
+        bool(dependant.path_params),
+        bool(dependant.query_params),
+        bool(dependant.header_params),
+        bool(dependant.cookie_params),
+    )
+
+
+def dependant_param_plan(dependant: Dependant) -> ParamPlan:
+    """compile_param_plan computed once per Dependant."""
+    plan = dependant.param_plan
+    if plan is None:
+        plan = dependant.param_plan = compile_param_plan(dependant)
+    return plan
+
+
+def compile_param_specs(dependant: Dependant) -> tuple[ParamEntry, ...] | None:
     """Specs for a dependant whose parameters are only plain path and query params.
 
     None when anything else takes part (dependencies, body, header or cookie params,
     request/response/background/security params, a pydantic model as query params) so the
-    caller keeps solve_dependencies; the specs give extract_params the same values,
-    defaults and errors as request_params_to_args.
+    caller keeps solve_dependencies.
     """
     if (
         dependant.dependencies
@@ -858,57 +919,50 @@ def compile_param_specs(dependant: Dependant) -> tuple[ParamSpec, ...] | None:
         or dependant.security_scopes_param_name
     ):
         return None
-    from pydantic import Json
+    plan = dependant_param_plan(dependant)
+    if any(spec[6] for spec in plan.specs):
+        return None
+    return plan.specs
 
-    specs: list[ParamSpec] = []
-    for fields, location in (
-        (dependant.path_params, "path"),
-        (dependant.query_params, "query"),
-    ):
-        if len(fields) == 1 and fields[0].is_model:
-            return None
-        for field in fields:
-            if field.param_location != location:
-                return None
-            is_sequence = field.is_sequence and not any(
-                type(item) is Json for item in field.field_info.metadata
-            )
-            specs.append(
-                (
-                    field.name,
-                    field.alias_for_validation,
-                    location == "path",
-                    is_sequence,
-                    field.field_info.is_required(),
-                    field,
-                )
-            )
-    return tuple(specs)
+
+def field_default_value(field: ModelField) -> Any:
+    """deepcopy(field.default) for an optional field, without FieldInfo.get_default when there is no factory."""
+    field_info = field.field_info
+    if field_info.default_factory is None:
+        return deepcopy(field_info.default)
+    return deepcopy(field.default)
 
 
 def extract_params(
-    specs: tuple[ParamSpec, ...],
-    path_params: Mapping[str, Any],
+    specs: tuple[ParamEntry, ...],
+    path_params: Mapping[str, Any] | None,
     query_params: QueryParams | None,
+    headers: Headers | None = None,
+    cookies: Mapping[str, str] | None = None,
 ) -> tuple[dict[str, Any], list[Any]]:
     """request_params_to_args for compiled specs: same lookups, defaults, validation and errors."""
     values: dict[str, Any] = {}
     errors: list[Any] = []
-    for name, alias, is_path, is_sequence, required, field in specs:
-        if is_path:
-            value = path_params.get(alias)
-            location = "path"
+    for name, alias, location, multi, is_sequence, required, is_model, field in specs:
+        if location == "path":
+            source: Any = path_params
+        elif location == "query":
+            source = query_params
+        elif location == "header":
+            source = headers
         else:
-            location = "query"
-            if is_sequence:
-                value = query_params.getlist(alias)  # type: ignore[union-attr]
-            else:
-                value = query_params.get(alias)  # type: ignore[union-attr]
+            source = cookies
+        if is_model:
+            model_values, model_errors = request_params_to_model_arg(field, source)
+            values.update(model_values)
+            errors.extend(model_errors)
+            continue
+        value = source.getlist(alias) if multi else source.get(alias)
         if value is None or (is_sequence and len(value) == 0):
             if required:
                 errors.append(get_missing_field_error(loc=(location, alias)))
                 continue
-            value = deepcopy(field.default)
+            value = field_default_value(field)
             if value is None:
                 values[name] = None
                 continue
