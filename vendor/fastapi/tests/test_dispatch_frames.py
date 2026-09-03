@@ -7,7 +7,9 @@ from notslowapi.routing import (
     TrivialHandlerParts,
     route_app,
 )
+from notslowapi.starlette.background import BackgroundTask
 from notslowapi.testclient import TestClient
+from pydantic import BaseModel
 
 
 class Boom(Exception):
@@ -175,3 +177,130 @@ def test_route_app_selects_by_parts() -> None:
     assert route_app(
         sync_route, sync_route.get_route_handler()
     ).__qualname__.startswith("trivial_request_response")
+
+
+class Item(BaseModel):
+    name: str
+    price: float
+
+
+status_app = FastAPI()
+task_runs: list[str] = []
+
+
+@status_app.post("/created", status_code=201)
+async def created() -> dict[str, str]:
+    return {"state": "created"}
+
+
+@status_app.delete("/gone", status_code=204)
+async def gone() -> None:
+    return None
+
+
+@status_app.get("/wrong-type")
+async def wrong_type() -> Item:
+    return {"name": "widget"}  # type: ignore[return-value]
+
+
+@status_app.get("/untyped")
+async def untyped():  # type: ignore[no-untyped-def]
+    return {"untyped": True, "nested": {"n": [1, 2]}}
+
+
+@status_app.get("/with-task")
+async def with_task() -> Response:
+    return JSONResponse(
+        {"task": True}, background=BackgroundTask(task_runs.append, "ran")
+    )
+
+
+@status_app.get("/model")
+async def model() -> Item:
+    return Item(name="widget", price=1.5)
+
+
+status_client = TestClient(status_app, raise_server_exceptions=False)
+
+
+def test_status_code_and_empty_body_decisions_are_precomputed() -> None:
+    created_response = status_client.post("/created")
+    assert created_response.status_code == 201
+    assert created_response.json() == {"state": "created"}
+    assert created_response.headers["content-length"] == str(
+        len(created_response.content)
+    )
+    gone_response = status_client.delete("/gone")
+    assert gone_response.status_code == 204
+    assert gone_response.content == b""
+    assert "content-length" not in gone_response.headers
+
+
+def test_response_validation_error_still_reports_the_endpoint() -> None:
+    response = status_client.get("/wrong-type")
+    assert response.status_code == 500
+    with TestClient(status_app) as raising:
+        try:
+            raising.get("/wrong-type")
+        except Exception as exc:  # noqa: BLE001
+            text = str(exc)
+            assert "GET /wrong-type" in text
+            assert "price" in text
+        else:
+            raise AssertionError("expected a ResponseValidationError")
+
+
+def test_untyped_endpoint_uses_the_json_response_class() -> None:
+    response = status_client.get("/untyped")
+    assert response.status_code == 200
+    assert response.json() == {"untyped": True, "nested": {"n": [1, 2]}}
+    assert response.headers["content-type"] == "application/json"
+
+
+def test_returned_response_with_background_task_runs_it() -> None:
+    response = status_client.get("/with-task")
+    assert response.json() == {"task": True}
+    assert task_runs == ["ran"]
+
+
+def test_direct_send_emits_the_same_messages_as_a_response() -> None:
+    import anyio
+
+    async def collect(path: str) -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = []
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": path,
+            "raw_path": path.encode(),
+            "query_string": b"",
+            "headers": [],
+            "root_path": "",
+            "scheme": "http",
+            "server": ("testserver", 80),
+            "client": ("testclient", 1),
+            "http_version": "1.1",
+        }
+
+        async def receive() -> dict[str, Any]:
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message: dict[str, Any]) -> None:
+            messages.append(message)
+
+        await status_app(scope, receive, send)
+        return messages
+
+    direct = anyio.run(collect, "/model")
+    body = Item(name="widget", price=1.5).model_dump_json().encode()
+    reference: list[dict[str, Any]] = []
+
+    async def reference_send(message: dict[str, Any]) -> None:
+        reference.append(message)
+
+    async def run_reference() -> None:
+        response = Response(body, media_type="application/json")
+        await response({"type": "http"}, None, reference_send)  # type: ignore[arg-type]
+
+    anyio.run(run_reference)
+    assert direct == reference
