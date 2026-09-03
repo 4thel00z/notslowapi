@@ -2163,6 +2163,39 @@ class _IncludedRouter(BaseRoute):
             )
         return None
 
+    def static_full_match(
+        self, route_path: str, method: str
+    ) -> "tuple[_IncludedRouter, _EffectiveRouteContext] | None":
+        """The included static route that fully matches, with the router it lives in.
+
+        Walks the candidates in declaration order the way _match does. Plain APIRoute
+        contexts are decided here: a dynamic one whose regex does not match is skipped,
+        a static one for this path wins when the method fits. Anything else (a dynamic
+        route that does match, a route or router subclass, a Starlette route, no full
+        match at all) returns None and the request takes the general matching path, so
+        ordering, 405 handling and overridden matches()/handle() methods behave as before.
+        """
+        for candidate in self.candidates_for(route_path):
+            if type(candidate) is _IncludedRouter:
+                if type(candidate.original_router) is not APIRouter:
+                    return None
+                return candidate.static_full_match(route_path, method)
+            if type(candidate) is not _EffectiveRouteContext:
+                return None
+            if type(candidate.original_route) is not APIRoute:
+                return None
+            if candidate.param_convertors:
+                if candidate.path_regex.match(route_path):
+                    return None
+                continue
+            if candidate.path != route_path:
+                return None
+            methods = candidate.methods
+            if methods and method not in methods:
+                continue
+            return self, candidate
+        return None
+
     def _match(
         self, scope: Scope
     ) -> tuple[Match, Scope, BaseRoute | None, _EffectiveRouteContext | None]:
@@ -3066,6 +3099,9 @@ class APIRouter(routing.Router):
         self._routes_version += 1
 
     def _get_routes_version(self, seen: set[int] | None = None) -> int:
+        nested = self._nested_included_routers()
+        if not nested:
+            return self._routes_version
         if seen is None:
             seen = set()
         router_id = id(self)
@@ -3073,7 +3109,7 @@ class APIRouter(routing.Router):
             return self._routes_version
         seen.add(router_id)
         version = self._routes_version
-        for route in self._nested_included_routers():
+        for route in nested:
             version += route.original_router._get_routes_version(seen)
         return version
 
@@ -3260,6 +3296,27 @@ class APIRouter(routing.Router):
                         if methods and scope["method"] not in methods
                         else Match.FULL
                     )
+            elif (
+                scope_type == "http"
+                and type(route) is _IncludedRouter
+                and type(route.original_router) is APIRouter
+            ):
+                selected = route.static_full_match(route_path, scope["method"])
+                if selected is not None:
+                    included_router, effective_context = selected
+                    fastapi_scope = _get_fastapi_scope(scope)
+                    fastapi_scope[_FASTAPI_INCLUDED_ROUTER_KEY] = included_router
+                    fastapi_scope[_FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY] = (
+                        effective_context
+                    )
+                    parent_params = scope.get("path_params")
+                    scope["path_params"] = dict(parent_params) if parent_params else {}
+                    scope["endpoint"] = effective_context.endpoint
+                    original_route = effective_context.original_route
+                    scope["route"] = original_route
+                    await original_route.handle(scope, receive, send)
+                    return
+                match, child_scope = route.matches(scope)
             else:
                 match, child_scope = route.matches(scope)
             if match == Match.FULL:
