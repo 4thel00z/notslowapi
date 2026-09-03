@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from notslowapi import Depends, FastAPI, Header, Response
+from notslowapi import Depends, FastAPI, Header, Request, Response
 from notslowapi.dependencies.models import (
     _get_cache_key,
     dependant_cache_key,
@@ -172,3 +172,102 @@ def test_inlined_leaves_keep_caching_and_error_semantics() -> None:
     bad = leaf_client.get("/leaves?n=abc")
     assert bad.status_code == 422
     assert [e["loc"] for e in bad.json()["detail"]] == [["query", "n"], ["query", "n"]]
+
+
+from notslowapi.dependencies.models import dependant_is_simple  # noqa: E402
+
+chain_app = FastAPI()
+chain_calls: list[str] = []
+
+
+def settings(region: str = "eu") -> dict[str, str]:
+    chain_calls.append("settings")
+    return {"region": region}
+
+
+async def session(config: Annotated[dict[str, str], Depends(settings)]) -> str:
+    chain_calls.append("session")
+    return f"session:{config['region']}"
+
+
+def audit(request: Request) -> str:
+    chain_calls.append("audit")
+    return request.url.path
+
+
+def chain_user(
+    x_token: Annotated[str | None, Header()] = None,
+    db: Annotated[str, Depends(session)] = "",
+) -> dict[str, str]:
+    chain_calls.append("user")
+    return {"user": x_token or "anonymous", "db": db}
+
+
+def ticket() -> Any:
+    chain_calls.append("ticket-enter")
+    yield "ticket"
+    chain_calls.append("ticket-exit")
+
+
+async def access(
+    user: Annotated[dict[str, str], Depends(chain_user)],
+    pass_: Annotated[str, Depends(ticket)],
+    limit: int = 10,
+) -> dict[str, Any]:
+    chain_calls.append("access")
+    return {**user, "ticket": pass_, "limit": limit}
+
+
+@chain_app.get("/chain")
+async def chain(
+    grant: Annotated[dict[str, Any], Depends(access)],
+    db: Annotated[str, Depends(session)],
+    trail: Annotated[str, Depends(audit)],
+) -> dict[str, Any]:
+    return {**grant, "db_again": db, "trail": trail}
+
+
+chain_client = TestClient(chain_app)
+
+
+def test_simple_classification() -> None:
+    dependant = next(
+        r for r in chain_app.routes if isinstance(r, APIRoute) and r.path == "/chain"
+    ).dependant
+    by_name = {sub.name: sub for sub in dependant.dependencies}
+    assert dependant_is_simple(by_name["grant"]) is True
+    assert dependant_is_leaf(by_name["grant"]) is False
+    assert dependant_is_simple(by_name["db"]) is True
+    assert dependant_is_simple(by_name["trail"]) is False
+    assert dependant_is_simple(dependant) is False
+
+
+def test_simple_subtrees_resolve_with_shared_cache_and_generators() -> None:
+    chain_calls.clear()
+    response = chain_client.get("/chain?region=us&limit=3", headers={"x-token": "t"})
+    assert response.json() == {
+        "user": "t",
+        "db": "session:us",
+        "ticket": "ticket",
+        "limit": 3,
+        "db_again": "session:us",
+        "trail": "/chain",
+    }
+    assert chain_calls == [
+        "settings",
+        "session",
+        "user",
+        "ticket-enter",
+        "access",
+        "audit",
+        "ticket-exit",
+    ]
+
+
+def test_errors_deep_in_a_simple_subtree_skip_the_callers() -> None:
+    chain_calls.clear()
+    response = chain_client.get("/chain?limit=abc")
+    assert response.status_code == 422
+    assert [e["loc"] for e in response.json()["detail"]] == [["query", "limit"]]
+    assert "access" not in chain_calls
+    assert "user" in chain_calls

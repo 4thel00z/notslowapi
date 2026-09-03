@@ -64,6 +64,7 @@ from notslowapi.dependencies.models import (
     dependant_cache_key,
     dependant_call_kinds,
     dependant_is_leaf,
+    dependant_is_simple,
     dependant_needs_response,
 )
 from notslowapi.exceptions import DependencyScopeError
@@ -654,6 +655,13 @@ async def solve_dependencies(
                     continue
             else:
                 sub_values = {}
+        elif not overrides and dependant_is_simple(sub_dependant):
+            errors_before = len(errors)
+            sub_values = await solve_simple(
+                sub_dependant, request, dependency_cache, errors
+            )
+            if len(errors) != errors_before:
+                continue
         else:
             solved_result = await solve_dependencies(
                 request=request,
@@ -745,6 +753,83 @@ async def solve_dependencies(
         response=response,
         dependency_cache=dependency_cache,
     )
+
+
+async def solve_simple(
+    dependant: Dependant,
+    request: Request | WebSocket,
+    dependency_cache: dict[DependencyCacheKey, Any],
+    errors: list[Any],
+) -> dict[str, Any]:
+    """solve_dependencies for a simple subtree (see dependant_is_simple) with no overrides.
+
+    Same sub-dependant order, cache key and use_cache rules, generator handling and error
+    order: a sub-dependant's errors are appended before its own parameter errors, and a
+    sub-dependant with errors is not called. Returns the values for dependant.call.
+    """
+    values: dict[str, Any] = {}
+    for sub_dependant in dependant.dependencies:
+        if dependant_is_leaf(sub_dependant):
+            sub_plan = dependant_param_plan(sub_dependant)
+            if sub_plan.specs:
+                sub_values, sub_errors = extract_params(
+                    sub_plan.specs,
+                    request.path_params if sub_plan.needs_path else None,
+                    request.query_params if sub_plan.needs_query else None,
+                    request.headers if sub_plan.needs_headers else None,
+                    request.cookies if sub_plan.needs_cookies else None,
+                )
+                if sub_errors:
+                    errors.extend(sub_errors)
+                    continue
+            else:
+                sub_values = {}
+        else:
+            errors_before = len(errors)
+            sub_values = await solve_simple(
+                sub_dependant, request, dependency_cache, errors
+            )
+            if len(errors) != errors_before:
+                continue
+        sub_dependant_cache_key = dependant_cache_key(sub_dependant)
+        if sub_dependant.use_cache and sub_dependant_cache_key in dependency_cache:
+            solved = dependency_cache[sub_dependant_cache_key]
+        else:
+            call = cast(AnyCallable, sub_dependant.call)
+            is_generator, is_coroutine = dependant_call_kinds(sub_dependant)
+            if is_generator:
+                use_astack = request.scope.get(
+                    "fastapi_function_astack"
+                    if sub_dependant.scope == "function"
+                    else "fastapi_inner_astack"
+                )
+                if not isinstance(use_astack, AsyncExitStack):
+                    raise RuntimeError(
+                        "dependency with yield needs an exit stack in the request scope"
+                    )
+                solved = await _solve_generator(
+                    dependant=sub_dependant, stack=use_astack, sub_values=sub_values
+                )
+            elif is_coroutine:
+                solved = await call(**sub_values)
+            else:
+                solved = await run_in_threadpool(call, **sub_values)
+        if sub_dependant.name is not None:
+            values[sub_dependant.name] = solved
+        if sub_dependant_cache_key not in dependency_cache:
+            dependency_cache[sub_dependant_cache_key] = solved
+    plan = dependant_param_plan(dependant)
+    if plan.specs:
+        param_values, param_errors = extract_params(
+            plan.specs,
+            request.path_params if plan.needs_path else None,
+            request.query_params if plan.needs_query else None,
+            request.headers if plan.needs_headers else None,
+            request.cookies if plan.needs_cookies else None,
+        )
+        values.update(param_values)
+        errors.extend(param_errors)
+    return values
 
 
 def _validate_value_with_model_field(
