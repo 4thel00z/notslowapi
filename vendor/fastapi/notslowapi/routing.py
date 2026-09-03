@@ -222,6 +222,25 @@ def request_response(
     return app
 
 
+async def send_route_exception_response(
+    exc: Exception,
+    request: Request,
+    scope: Scope,
+    receive: Receive,
+    sender: Send,
+    tracker: list[bool],
+) -> None:
+    """The exception tail of the one-frame route apps: handler lookup, then its response."""
+    exception_handler = find_exception_handler(exc, scope)
+    if exception_handler is None:
+        raise exc
+    if tracker[0]:
+        raise RuntimeError(
+            "Caught handled exception, but response already started."
+        ) from exc
+    await send_handler_response(exception_handler, exc, request, scope, receive, sender)
+
+
 def trivial_request_response(
     handler: Callable[[Request], Awaitable[Response]],
 ) -> ASGIApp:
@@ -240,15 +259,50 @@ def trivial_request_response(
             response = await handler(request)
             await response(scope, receive, sender)
         except Exception as exc:
-            exception_handler = find_exception_handler(exc, scope)
-            if exception_handler is None:
-                raise exc
-            if tracker[0]:
-                raise RuntimeError(
-                    "Caught handled exception, but response already started."
-                ) from exc
-            await send_handler_response(
-                exception_handler, exc, request, scope, receive, sender
+            await send_route_exception_response(
+                exc, request, scope, receive, sender, tracker
+            )
+
+    return app
+
+
+@dataclass(frozen=True)
+class TrivialHandlerParts:
+    """What trivial_route_app needs to run a coroutine endpoint without parameters.
+
+    get_request_handler attaches this to the handler it returns for such endpoints;
+    route_app then builds the response in the request wrapper's own frame instead of
+    awaiting the handler.
+    """
+
+    call: Callable[..., Awaitable[Any]]
+    respond: Callable[[Any, Request], Response]
+
+
+def trivial_route_app(parts: TrivialHandlerParts) -> ASGIApp:
+    """trivial_request_response with the handler inlined: one coroutine from scope to send."""
+    call = parts.call
+    respond = parts.respond
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        request = Request(scope, receive, send)
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        try:
+            raw_response = await call()
+            if isinstance(raw_response, Response):
+                response = raw_response
+            else:
+                response = respond(raw_response, request)
+            await response(scope, receive, sender)
+        except Exception as exc:
+            await send_route_exception_response(
+                exc, request, scope, receive, sender, tracker
             )
 
     return app
@@ -258,11 +312,16 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
     """The ASGI app for a route: the one-frame variant when no exit stack can ever be needed.
 
     Without sub-dependencies nothing can be overridden into a dependency with yield, so the
-    build-time uses_exit_stacks decision is final.
+    build-time uses_exit_stacks decision is final. A handler carrying TrivialHandlerParts
+    (a coroutine endpoint without parameters, from an un-overridden get_route_handler) is
+    inlined into the wrapper.
     """
-    if not route.uses_exit_stacks and not route.dependant.dependencies:
-        return trivial_request_response(handler)
-    return request_response(handler, needs_exit_stacks=route.needs_exit_stacks)
+    if route.uses_exit_stacks or route.dependant.dependencies:
+        return request_response(handler, needs_exit_stacks=route.needs_exit_stacks)
+    parts = getattr(handler, "parts", None)
+    if isinstance(parts, TrivialHandlerParts):
+        return trivial_route_app(parts)
+    return trivial_request_response(handler)
 
 
 # Copy of starlette.routing.websocket_session modified to include the
@@ -689,6 +748,27 @@ def get_request_handler(
                 endpoint_ctx_factory=functools.partial(endpoint_context, request),
             )
         return build_response(content, trivial_solved)
+
+    if is_coroutine:
+
+        def respond_trivial(raw_response: Any, request: Request) -> Response:
+            content = serialize_response_sync(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(endpoint_context, request),
+            )
+            return build_response(content, trivial_solved)
+
+        trivial_app.parts = TrivialHandlerParts(  # type: ignore[attr-defined]
+            call=call, respond=respond_trivial
+        )
 
     async def plain_app(request: Request) -> Response:
         solved_result = await solve_dependencies(
@@ -3271,12 +3351,7 @@ class APIRouter(routing.Router):
         route_path = get_route_path(scope)
         scope_type = scope["type"]
         for route in self.candidate_routes(route_path):
-            if (
-                scope_type == "http"
-                and type(route) is APIRoute
-                and not route.param_convertors
-                and route.path == route_path
-            ):
+            if scope_type == "http" and type(route) is APIRoute:
                 effective_context = _get_scope_effective_route_context(scope)
                 if (
                     effective_context is not None
@@ -3284,18 +3359,32 @@ class APIRouter(routing.Router):
                 ):
                     match, child_scope = route.matches(scope)
                 else:
+                    convertors = route.param_convertors
+                    if convertors:
+                        path_match = route.path_regex.match(route_path)
+                        if not path_match:
+                            continue
+                        matched_params = path_match.groupdict()
+                        for key, value in matched_params.items():
+                            matched_params[key] = convertors[key].convert(value)
+                    elif route.path == route_path:
+                        matched_params = {}
+                    else:
+                        continue
                     parent_params = scope.get("path_params")
+                    path_params = dict(parent_params) if parent_params else {}
+                    path_params.update(matched_params)
                     child_scope = {
                         "endpoint": route.endpoint,
-                        "path_params": dict(parent_params) if parent_params else {},
+                        "path_params": path_params,
                         "route": route,
                     }
                     methods = route.methods
-                    match = (
-                        Match.PARTIAL
-                        if methods and scope["method"] not in methods
-                        else Match.FULL
-                    )
+                    if not methods or scope["method"] in methods:
+                        scope.update(child_scope)
+                        await route.app(scope, receive, send)
+                        return
+                    match = Match.PARTIAL
             elif (
                 scope_type == "http"
                 and type(route) is _IncludedRouter

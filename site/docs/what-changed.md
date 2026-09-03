@@ -30,10 +30,11 @@ Included routes rebuilt their handler on every request; it is cached now, routes
 
 ## Exception handling and dispatch frames
 
-Response-start tracking became plain functions, then one tracker shared through the scope; without user middleware, `ServerErrorMiddleware`, `ExceptionMiddleware` and the router became one `ExceptionHandlingMiddleware` (apps with user middleware keep all three); `APIRoute.handle`, `FastAPI.__call__` and `request_response` each dropped a frame; `JSONResponse.render` calls the C encoder directly. The shared-tracker commit went unmeasured; its window was too noisy.
+Response-start tracking became plain functions, then one tracker shared through the scope; without user middleware, `ServerErrorMiddleware`, `ExceptionMiddleware` and the router became one `ExceptionHandlingMiddleware` (apps with user middleware keep all three); `APIRoute.handle`, `FastAPI.__call__` and `request_response` each dropped a frame; `JSONResponse.render` calls the C encoder directly. The shared-tracker commit went unmeasured; its window was too noisy. Later, `APIRouter.app` matches dynamic routes inline and awaits the route's ASGI app directly on a full match, and a coroutine endpoint without parameters runs inside the request wrapper's own coroutine (`trivial_route_app`) instead of behind a handler frame.
 
 - l2_fastapi_dict: 24.6 → 23.8, then 18.9 → 18.2, then 19.4 → 18.9
 - l1_starlette: 18.6 → 18.0, then 17.5 → 16.8 (granian 10.2 → 9.4)
+- l2_fastapi_dict: 17.5 → 17.2, on granian 9.2 → 8.9; l3_fastapi_params: 22.4 → 22.0, on granian 11.9 → 11.3
 
 ## JSON encoding
 
