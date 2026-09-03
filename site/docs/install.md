@@ -47,7 +47,7 @@ uv add "notslowapi[granian,standard]"
 python -c "import notslowapi; print(notslowapi.__version__)"
 ```
 
-prints `0.1.0`. The vendored Starlette reports its own version:
+prints `0.2.0`. The vendored Starlette reports its own version:
 
 ```console
 python -c "import notslowapi.starlette; print(notslowapi.starlette.__version__)"

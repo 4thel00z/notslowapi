@@ -14,7 +14,7 @@ The changes cut across FastAPI and Starlette at once: the combined exception lay
 
 ## Will it track FastAPI releases?
 
-notslowapi 0.1.0 is built from FastAPI 0.141.1 and Starlette 1.6.0. The fork is a git subtree of github.com/4thel00z/fastapi with upstream history intact, so upstream releases can be merged and re-measured on the ladder. Releases are built from tags `v*.*.*` and published to PyPI by the release workflow.
+notslowapi 0.2.0 is built from FastAPI 0.141.1 and Starlette 1.6.0. The fork is a git subtree of github.com/4thel00z/fastapi with upstream history intact, so upstream releases can be merged and re-measured on the ladder. Releases are built from tags `v*.*.*` and published to PyPI by the release workflow.
 
 ## Does it work with Pydantic v1?
 

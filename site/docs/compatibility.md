@@ -1,6 +1,6 @@
 # Compatibility
 
-notslowapi 0.1.0 has the same public API as FastAPI 0.141.1. Classes, functions, parameters and behaviors are upstream's; the changes are internal. The check is the upstream test suite with its imports rewritten.
+notslowapi 0.2.0 has the same public API as FastAPI 0.141.1. Classes, functions, parameters and behaviors are upstream's; the changes are internal. The check is the upstream test suite with its imports rewritten.
 
 ## Imports
 
