@@ -2282,6 +2282,15 @@ def build_effective_index(
             return None
         return candidate.path
 
+    def literal_prefix(
+        candidate: "_EffectiveRouteContext | _IncludedRouter",
+    ) -> str | None:
+        if not isinstance(candidate, _EffectiveRouteContext):
+            return None
+        if not isinstance(candidate.original_route, APIRoute):
+            return None
+        return candidate.path_format.partition("{")[0]
+
     index: dict[str, list[_EffectiveRouteContext | _IncludedRouter]] = {}
     rest: list[_EffectiveRouteContext | _IncludedRouter] = []
     for candidate in candidates:
@@ -2294,8 +2303,10 @@ def build_effective_index(
             index[path].append(candidate)
             continue
         rest.append(candidate)
-        for group in index.values():
-            group.append(candidate)
+        prefix = literal_prefix(candidate)
+        for path, group in index.items():
+            if prefix is None or path.startswith(prefix):
+                group.append(candidate)
     return index, rest
 
 

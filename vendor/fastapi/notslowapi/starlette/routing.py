@@ -651,10 +651,22 @@ class RouteList(list[BaseRoute]):
         return self
 
 
+def literal_prefix(route: BaseRoute) -> str | None:
+    """The literal every path matched by a dynamic Route starts with; None when any path may match."""
+    if not isinstance(route, Route):
+        return None
+    return route.path_format.partition("{")[0]
+
+
 def build_route_index(
     routes: Sequence[BaseRoute],
 ) -> tuple[dict[str, list[BaseRoute]], list[BaseRoute]]:
-    """Group routes by static path; every non-static route is a candidate for every path."""
+    """Group routes by static path; a non-static route is a candidate for every path it could match.
+
+    A Route's regex is anchored at the start and begins with the literal before its first
+    parameter, so it is left out of the buckets of static paths that do not start with that
+    literal. Routes of other kinds stay candidates for every path.
+    """
     index: dict[str, list[BaseRoute]] = {}
     rest: list[BaseRoute] = []
     for route in routes:
@@ -665,8 +677,10 @@ def build_route_index(
             index[route.path].append(route)
             continue
         rest.append(route)
-        for candidates in index.values():
-            candidates.append(route)
+        prefix = literal_prefix(route)
+        for path, candidates in index.items():
+            if prefix is None or path.startswith(prefix):
+                candidates.append(route)
     return index, rest
 
 
