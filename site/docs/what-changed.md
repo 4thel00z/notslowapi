@@ -82,9 +82,10 @@ The last commit moves the modified Starlette into the package as `notslowapi.sta
 
 ## JSON body validated from bytes
 
-A route whose only parameter is one JSON body read the body, built `Headers` to find the content type, ran `json.loads`, then had the solver validate the dict with `validate_python`. Such routes now get a handler that reads the content type from the raw ASGI headers and hands the bytes to pydantic-core's JSON validator in one pass, skipping the solver. Empty, `null`, non-JSON and invalid bodies, and any validation error, go through the upstream handler so the responses stay identical; strict models are the one documented difference (see [Compatibility](compatibility.md)).
+A route whose only parameter is one JSON body read the body, built `Headers` to find the content type, ran `json.loads`, then had the solver validate the dict with `validate_python`. Such routes now get a handler that reads the content type from the raw ASGI headers and hands the bytes to pydantic-core's JSON validator in one pass, skipping the solver. Empty, `null`, non-JSON and invalid bodies, and any validation error, go through the upstream handler so the responses stay identical; strict models are the one documented difference (see [Compatibility](compatibility.md)). The wrapper then reads the body straight from `receive`, validates the bytes, awaits the endpoint and sends the two ASGI messages itself; cases it cannot decide identically replay the body into the previous handler.
 
 - l4_fastapi_model: 26.7 → 22.1 (37.4k → 45.4k req/s); on granian 21.4 → 15.7 (46.6k → 64.1k req/s)
+- l4_fastapi_model: 21.2 → 19.3 (47.2k → 51.8k req/s); on granian 14.6 → 13.1 (68.5k → 76.3k req/s)
 
 ## What did not change
 

@@ -114,7 +114,15 @@ from notslowapi.starlette.routing import (
 )
 from notslowapi.starlette.routing import Mount as Mount  # noqa
 from notslowapi.starlette.staticfiles import StaticFiles
-from notslowapi.starlette.types import AppType, ASGIApp, Lifespan, Receive, Scope, Send
+from notslowapi.starlette.types import (
+    AppType,
+    ASGIApp,
+    Lifespan,
+    Message,
+    Receive,
+    Scope,
+    Send,
+)
 from notslowapi.starlette.websockets import WebSocket
 from notslowapi.types import DecoratedCallable, IncEx
 from notslowapi.utils import (
@@ -531,6 +539,124 @@ def params_route_app(parts: ParamsHandlerParts) -> ASGIApp:
     return app
 
 
+@dataclass(frozen=True)
+class BodyHandlerParts:
+    """What body_route_app needs for a coroutine endpoint whose only parameter is a JSON body.
+
+    validate is ModelField.validate_json of the body field; general is the json_body_app
+    handler, reached with a Request that replays the body for everything the fast path
+    cannot decide identically.
+    """
+
+    name: str
+    validate: Callable[[bytes], Any]
+    strict_content_type: bool
+    call: Callable[..., Awaitable[Any]]
+    general: Callable[[Request], Awaitable[Response]]
+    respond: Callable[[Any, Scope], Response]
+    serialize: Callable[[Any, Scope], bytes] | None
+    status_code: int
+    body_allowed: bool
+    with_content_length: bool
+
+
+def replaying_receive(messages: list[Message]) -> Receive:
+    """A receive callable that hands back already consumed messages, then disconnects."""
+    pending = list(messages)
+
+    async def receive() -> Message:
+        if pending:
+            return pending.pop(0)
+        return {"type": "http.disconnect"}
+
+    return receive
+
+
+def body_route_app(parts: BodyHandlerParts) -> ASGIApp:
+    """json_body_app inlined into the request wrapper: body from receive, one pydantic pass, direct send."""
+    name = parts.name
+    validate = parts.validate
+    strict_content_type = parts.strict_content_type
+    call = parts.call
+    general = parts.general
+    respond = parts.respond
+    serialize = parts.serialize
+    status_code = parts.status_code
+    body_allowed = parts.body_allowed
+    with_content_length = parts.with_content_length
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        messages: list[Message] = []
+        try:
+            chunks: list[bytes] = []
+            complete = False
+            while not complete:
+                message = await receive()
+                messages.append(message)
+                if message["type"] != "http.request":
+                    break
+                chunk = message.get("body", b"")
+                if chunk:
+                    chunks.append(chunk)
+                complete = not message.get("more_body", False)
+            body = b"".join(chunks) if len(chunks) != 1 else chunks[0]
+            value = Undefined
+            if (
+                complete
+                and body
+                and scope_declares_json_body(scope, strict_content_type)
+            ):
+                value = validate(body)
+            if value is Undefined or value is None:
+                request = Request(scope, replaying_receive(messages), send)
+                await (await general(request))(scope, receive, sender)
+                return
+            raw_response = await call(**{name: value})
+            if isinstance(raw_response, Response):
+                await raw_response(scope, receive, sender)
+                return
+            if serialize is None:
+                await respond(raw_response, scope)(scope, receive, sender)
+                return
+            out = serialize(raw_response, scope)
+            if not body_allowed:
+                out = b""
+            if with_content_length:
+                headers = [
+                    (b"content-length", b"%d" % len(out)),
+                    JSON_CONTENT_TYPE_HEADER,
+                ]
+            else:
+                headers = [JSON_CONTENT_TYPE_HEADER]
+            tracker[0] = True
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": status_code,
+                    "headers": headers,
+                }
+            )
+            await send({"type": "http.response.body", "body": out})
+        except Exception as exc:
+            await send_route_exception_response(
+                exc,
+                Request(scope, replaying_receive(messages), send),
+                scope,
+                receive,
+                sender,
+                tracker,
+            )
+
+    return app
+
+
 def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGIApp:
     """The ASGI app for a route: the one-frame variant when no exit stack can ever be needed.
 
@@ -553,6 +679,8 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
         return general
     if isinstance(parts, TrivialHandlerParts):
         return trivial_route_app(parts)
+    if isinstance(parts, BodyHandlerParts):
+        return body_route_app(parts)
     if isinstance(parts, ParamsHandlerParts):
         return params_route_app(parts)
     if isinstance(parts, PlainHandlerParts):
@@ -1563,6 +1691,22 @@ def get_request_handler(
                 endpoint_ctx_factory=functools.partial(endpoint_context, request),
             )
         return build_response(content, trivial_solved)
+
+    if is_coroutine:
+        json_body_app.parts = BodyHandlerParts(  # type: ignore[attr-defined]
+            name=body_param.name,
+            validate=body_param.validate_json,
+            strict_content_type=actual_strict_content_type,
+            call=call,
+            general=json_body_app,
+            respond=respond_trivial,
+            serialize=serialize_trivial,
+            status_code=trivial_status,
+            body_allowed=is_body_allowed_for_status_code(trivial_status),
+            with_content_length=not (
+                trivial_status < 200 or trivial_status in (204, 304)
+            ),
+        )
 
     return json_body_app
 
