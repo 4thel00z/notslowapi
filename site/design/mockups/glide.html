@@ -112,6 +112,7 @@ p{text-wrap:pretty}
   font-size:.9375rem;color:var(--ink-2);
 }
 @media (max-width:600px){
+  .ticker-head{flex-direction:column;gap:6px;text-align:center}
   .install-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label copy" "code code";row-gap:8px}
   .install-label{grid-area:label}
   .install-code{grid-area:code}
@@ -166,7 +167,7 @@ p{text-wrap:pretty}
   .bench thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .bench,.bench tbody,.bench tr,.bench th,.bench td{display:block;width:auto}
   .bench tr{padding:18px 0 10px;border-top:1px solid var(--on-dark-line)}
-  .bench tbody th{padding:0 0 10px;border:0;font-weight:575}
+  .bench tbody th{padding:0 0 10px;border:0;font-weight:575;width:auto}
   .bench td{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:7px 0;border:0;font-size:1rem}
   .bench td::before{content:attr(data-col);font-size:.875rem;font-weight:450;color:var(--on-dark-2);flex-shrink:0;letter-spacing:0}
   .bench td.is-hi::before{color:var(--aqua)}

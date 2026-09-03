@@ -1,0 +1,37 @@
+notslowapi.com, www.notslowapi.com {
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 100MiB
+			roll_keep 5
+			roll_keep_for 168h
+		}
+		format json
+	}
+
+	@staticAssets {
+		path *.png *.jpg *.jpeg *.gif *.webp *.svg
+	}
+	header @staticAssets Cache-Control "public, max-age=604800, immutable"
+
+	@fontFiles {
+		path *.woff *.woff2 *.ttf *.otf
+	}
+	header @fontFiles Cache-Control "public, max-age=31536000, immutable"
+
+	try_files {path} {path}.html {path}/index.html
+	root * /home/httpserver/private/notslowapi.com/out
+
+	file_server {
+		hide .git
+		hide .env
+	}
+
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+
+	tls {
+		import tls
+	}
+}

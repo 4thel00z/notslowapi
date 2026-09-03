@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benchmarks · notslowapi</title>
+<style>
+:root { --ink: #111; --gray: #666; --hair: #e5e5e5; --bg: #fbfbf9; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+main { max-width: 64rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+nav a { color: var(--ink); text-decoration: none; margin-right: 1.25rem; font-weight: 600; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 2rem 0 0.5rem; }
+h2 { font-size: 1.25rem; margin: 3rem 0 0.75rem; }
+p.lead { color: var(--gray); max-width: 46rem; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { font-weight: 600; color: var(--gray); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.wrap { overflow-x: auto; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<nav><a href="/">notslowapi</a><a href="/docs/">Docs</a><a href="/benchmarks/">Benchmarks</a><a href="https://github.com/4thel00z/notslowapi">GitHub</a></nav>
+<h1>Benchmarks</h1>
+<p class="lead">One core of an Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of three 5-second runs per rung. Every number comes from a JSON file under <code>bench/baseline/</code> in the repository; this page is generated from those files.</p>
+<h2>Where things stand</h2>
+<div class="wrap">{{LADDER_TABLE}}</div>
+<h2>Every change, measured before and after</h2>
+<p class="lead">Each row is one committed change, measured in the same session with the previous tree checked out for the before run. Rungs not touched by a change are controls.</p>
+<div class="wrap">{{FIXES_TABLE}}</div>
+<h2>Method</h2>
+<p class="lead">The ladder isolates layers: a raw ASGI app, a Starlette route, then notslowapi routes of increasing complexity, all under the same server flags. Load comes from oha; the native split between interpreter and kernel comes from <code>sample(1)</code>; Python-level attribution from pyinstrument started in the ASGI lifespan. Surprising numbers are re-measured in alternating after, before, after runs before they count. Details in the <a href="/docs/benchmarks-method/">docs</a>.</p>
+</main>
+</body>
+</html>

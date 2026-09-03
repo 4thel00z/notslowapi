@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+NAME=notslowapi.com
+DEPLOY_DIR="$HOME/private/$NAME"
+GIT_DIR="$HOME/private/$NAME.git"
+UV="$HOME/.local/bin/uv"
+mkdir -p "$DEPLOY_DIR"
+git --work-tree="$DEPLOY_DIR" --git-dir="$GIT_DIR" checkout -f master
+cd "$DEPLOY_DIR"
+"$UV" run --project site --frozen python site/build.py
+echo "deployed $(git --git-dir="$GIT_DIR" rev-parse --short master) to $DEPLOY_DIR/out"

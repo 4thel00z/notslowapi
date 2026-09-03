@@ -1,0 +1,45 @@
+site_name: notslowapi
+site_url: https://notslowapi.com/docs/
+site_description: A fork of FastAPI that does less work per request. Same API, same test suite.
+repo_url: https://github.com/4thel00z/notslowapi
+repo_name: 4thel00z/notslowapi
+edit_uri: ""
+docs_dir: docs
+site_dir: ../out/docs
+
+theme:
+  name: material
+  font: false
+  palette:
+    - scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - content.code.copy
+    - toc.integrate
+
+nav:
+  - Overview: index.md
+  - Install: install.md
+  - Deploy: deploy.md
+  - What changed: what-changed.md
+  - Compatibility: compatibility.md
+  - Benchmark method: benchmarks-method.md
+  - FAQ: faq.md
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
