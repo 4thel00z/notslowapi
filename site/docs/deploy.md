@@ -39,4 +39,4 @@ The raw ASGI column is a bare callable that sends fixed bytes; the difference be
 
 ## Workers
 
-The numbers above use one worker. Multi-worker throughput was not measured cleanly: with the load generator on the same machine, six workers of either server reached 140,000 to 175,000 requests per second, which is the machine's ceiling rather than the framework's. Measuring scaling across cores needs a separate client machine. Details in [Benchmark method](benchmarks-method.md).
+The numbers above use one worker. Multi-worker throughput was not measured in isolation: with the load generator on the same machine, six workers of either server reached 140,000 to 175,000 requests per second, which is the machine's ceiling rather than the framework's. Measuring scaling across cores needs a separate client machine. Details in [Benchmark method](benchmarks-method.md).

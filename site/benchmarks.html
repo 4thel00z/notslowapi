@@ -4,34 +4,88 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Benchmarks · notslowapi</title>
-<style>
-:root { --ink: #111; --gray: #666; --hair: #e5e5e5; --bg: #fbfbf9; }
-* { box-sizing: border-box; }
-body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
-main { max-width: 64rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
-nav a { color: var(--ink); text-decoration: none; margin-right: 1.25rem; font-weight: 600; }
-h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 2rem 0 0.5rem; }
-h2 { font-size: 1.25rem; margin: 3rem 0 0.75rem; }
-p.lead { color: var(--gray); max-width: 46rem; }
-table { border-collapse: collapse; width: 100%; font-size: 14px; }
-th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--hair); vertical-align: top; }
-th { font-weight: 600; color: var(--gray); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-.wrap { overflow-x: auto; }
-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
-</style>
+<meta name="description" content="Every notslowapi number, generated from the JSON files under bench/baseline: the ASGI ladder on uvicorn and granian, and every change measured before and after.">
+<link rel="canonical" href="https://notslowapi.com/benchmarks/">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="notslowapi">
+<meta property="og:title" content="notslowapi benchmarks">
+<meta property="og:description" content="The ASGI ladder on uvicorn and granian, and every change measured before and after. Generated from the JSON files under bench/baseline.">
+<meta property="og:url" content="https://notslowapi.com/benchmarks/">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
 </head>
 <body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="wordmark" href="/">
+      <svg viewBox="0 0 381.2 86" role="img" aria-label="notslowapi"><path d="M12.5,64 V24 M12.5,41.5 A13 13 0 0 1 38.5,41.5 V64 M54.5,44 A15.5 15.5 0 1 0 85.5,44 A15.5 15.5 0 1 0 54.5,44 M107.5,12 V64 M97,28.5 H120 M149.63,31.27 A8 7.75 0 1 0 143.5,44 A8 7.75 0 1 1 137.37,56.73 M167.5,12 V64 M183.5,44 A12.4 15.5 0 1 0 208.3,44 A12.4 15.5 0 1 0 183.5,44 M224.3,24 V50 A7.6 9.5 0 0 0 239.5,50 V24 M239.5,24 V50 A7.6 9.5 0 0 0 254.7,50 V24 M274.7,44 A15.5 15.5 0 1 0 305.7,44 A15.5 15.5 0 1 0 274.7,44 M305.7,24 V64 M321.7,24 V78 M321.7,44 A15.5 15.5 0 1 0 352.7,44 A15.5 15.5 0 1 0 321.7,44 M368.7,24 V64 M368.7,8 V17" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="butt" stroke-linejoin="miter"/><rect class="bar" x="128" y="39.5" width="134.2" height="9"/></svg>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/docs/">Docs</a>
+      <a href="/benchmarks/" aria-current="page">Benchmarks</a>
+    </nav>
+    <a class="btn btn-ghost btn-sm" href="https://github.com/4thel00z/notslowapi">GitHub</a>
+  </div>
+</header>
+
 <main>
-<nav><a href="/">notslowapi</a><a href="/docs/">Docs</a><a href="/benchmarks/">Benchmarks</a><a href="https://github.com/4thel00z/notslowapi">GitHub</a></nav>
-<h1>Benchmarks</h1>
-<p class="lead">One core of an Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of three 5-second runs per rung. Every number comes from a JSON file under <code>bench/baseline/</code> in the repository; this page is generated from those files.</p>
-<h2>Where things stand</h2>
-<div class="wrap">{{LADDER_TABLE}}</div>
-<h2>Every change, measured before and after</h2>
-<p class="lead">Each row is one committed change, measured in the same session with the previous tree checked out for the before run. Rungs not touched by a change are controls.</p>
-<div class="wrap">{{FIXES_TABLE}}</div>
-<h2>Method</h2>
-<p class="lead">The ladder isolates layers: a raw ASGI app, a Starlette route, then notslowapi routes of increasing complexity, all under the same server flags. Load comes from oha; the native split between interpreter and kernel comes from <code>sample(1)</code>; Python-level attribution from pyinstrument started in the ASGI lifespan. Surprising numbers are re-measured in alternating after, before, after runs before they count. Details in the <a href="/docs/benchmarks-method/">docs</a>.</p>
+  <section class="page-head">
+    <div class="wrap">
+      <h1>Benchmarks</h1>
+      <p class="lead">One core of an Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of three 5-second runs per rung. Every number comes from a JSON file under <code>bench/baseline/</code> in the repository; this page is generated from those files.</p>
+    </div>
+  </section>
+
+  <div class="numbers-shell">
+    <section class="dark section" id="ladder">
+      <div class="wrap">
+        <div class="numbers-head">
+          <h2>Where things stand</h2>
+          <p class="lead">Microseconds per request and requests per second, one core; lower microseconds is better. The first column is the day-one ladder run of FastAPI 0.141 on uvicorn, the other two are the current tree.</p>
+        </div>
+        <div class="table-wrap">{{LADDER_TABLE}}</div>
+        <p class="table-note">Rungs added after day one show as not measured in the first column. Single-core numbers; multi-core scaling needs a separate client machine. Source files: <code>results_ladder_v1.json</code> and <code>results_ladder_v3.json</code>.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="section" id="changes">
+    <div class="wrap">
+      <h2>Every change, measured before and after</h2>
+      <p class="lead">Each row is one committed change, measured in the same session with the previous tree checked out for the before run. Rungs not touched by a change are controls. A dot marks a rung that got faster.</p>
+      <div class="table-card">{{FIXES_TABLE}}</div>
+    </div>
+  </section>
+
+  <section class="section" id="method">
+    <div class="wrap">
+      <h2>Method</h2>
+      <p class="lead">The ladder isolates layers: a raw ASGI app, a Starlette route, then notslowapi routes of increasing complexity, all under the same server flags. Load comes from oha; the native split between interpreter and kernel comes from <code>sample(1)</code>; Python-level attribution from pyinstrument started in the ASGI lifespan. Surprising numbers are re-measured in alternating after, before, after runs before they count. Details in the <a href="/docs/benchmarks-method/">docs</a>.</p>
+    </div>
+  </section>
 </main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="wordmark" href="/">
+        <svg viewBox="0 0 381.2 86" role="img" aria-label="notslowapi"><path d="M12.5,64 V24 M12.5,41.5 A13 13 0 0 1 38.5,41.5 V64 M54.5,44 A15.5 15.5 0 1 0 85.5,44 A15.5 15.5 0 1 0 54.5,44 M107.5,12 V64 M97,28.5 H120 M149.63,31.27 A8 7.75 0 1 0 143.5,44 A8 7.75 0 1 1 137.37,56.73 M167.5,12 V64 M183.5,44 A12.4 15.5 0 1 0 208.3,44 A12.4 15.5 0 1 0 183.5,44 M224.3,24 V50 A7.6 9.5 0 0 0 239.5,50 V24 M239.5,24 V50 A7.6 9.5 0 0 0 254.7,50 V24 M274.7,44 A15.5 15.5 0 1 0 305.7,44 A15.5 15.5 0 1 0 274.7,44 M305.7,24 V64 M321.7,24 V78 M321.7,44 A15.5 15.5 0 1 0 352.7,44 A15.5 15.5 0 1 0 321.7,44 M368.7,24 V64 M368.7,8 V17" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="butt" stroke-linejoin="miter"/><rect class="bar" x="128" y="39.5" width="134.2" height="9"/></svg>
+      </a>
+      <p>A fork of FastAPI made faster, measured layer by layer.</p>
+    </div>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="/docs/">Docs</a>
+      <a href="/benchmarks/">Benchmarks</a>
+      <a href="https://github.com/4thel00z/notslowapi">GitHub</a>
+      <a href="https://pypi.org/project/notslowapi/">PyPI</a>
+    </nav>
+    <p class="foot-legal">notslowapi 0.1.0. Python 3.10 or newer. MIT (FastAPI) and BSD (vendored Starlette). notslowapi.com</p>
+  </div>
+</footer>
 </body>
 </html>

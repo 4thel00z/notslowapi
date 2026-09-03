@@ -63,7 +63,7 @@ One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5
 | pydantic body + response_model | 52.1 µs, 19,212 req/s | 26.1 µs, 38,295 req/s | 20.1 µs, 49,777 req/s |
 | 50 routes via include_router | 92.2 µs, 10,800 req/s * | 26.3 µs, 37,968 req/s | 17.3 µs, 57,864 req/s |
 
-\* This rung did not exist in `results_ladder_v1.json`; the day-one figure is the before-run recorded in the include_router commit message.
+\* This rung did not exist in `results_ladder_v1.json`. The 92.2 µs is the before-run of the include_router change (`bench/baseline/results_fix11_before.json`), measured on a tree that already had the first ten changes, so it understates the day-one gap.
 
 The before/after figures in the next section are same-window runs from the commit messages. They differ from the full-ladder figures above by a few percent, as [Benchmark method](https://notslowapi.com/docs/benchmarks-method/) explains.
 

@@ -2,42 +2,52 @@ site_name: notslowapi
 site_url: https://notslowapi.com/docs/
 site_description: A fork of FastAPI that does less work per request. Same API, same test suite.
 repo_url: https://github.com/4thel00z/notslowapi
-repo_name: 4thel00z/notslowapi
+repo_name: GitHub
 edit_uri: ""
 docs_dir: docs
 site_dir: ../out/docs
+copyright: MIT (FastAPI) and BSD (vendored Starlette). notslowapi.com
 
 theme:
   name: material
   font: false
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
   palette:
-    - scheme: default
-      primary: black
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: black
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
+    scheme: default
+    primary: custom
+    accent: custom
   features:
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.follow
     - content.code.copy
-    - toc.integrate
+    - search.highlight
+
+extra:
+  homepage: https://notslowapi.com/
+  generator: false
+
+extra_css:
+  - stylesheets/glide.css
 
 nav:
-  - Overview: index.md
-  - Install: install.md
-  - Deploy: deploy.md
-  - What changed: what-changed.md
-  - Compatibility: compatibility.md
-  - Benchmark method: benchmarks-method.md
-  - FAQ: faq.md
+  - Docs:
+      - Overview: index.md
+      - Install: install.md
+      - Deploy: deploy.md
+      - What changed: what-changed.md
+      - Compatibility: compatibility.md
+      - Benchmark method: benchmarks-method.md
+      - FAQ: faq.md
+  - Benchmarks: https://notslowapi.com/benchmarks/
+  - Home: https://notslowapi.com/
 
 markdown_extensions:
+  - admonition
   - tables
   - toc:
       permalink: true

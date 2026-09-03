@@ -45,7 +45,7 @@ BENCH_ONLY=l2_fastapi_dict,l3_fastapi_params uv run python -m bench.run
 
 Each change was measured in one window against the previous commit, stashed, at a load average low enough that repeats agree; later changes alternate after/before/after. Runs during a system stall (indexing, a backup, load average of 7 and above) were discarded and the commit says so; one commit's window was too noisy to measure at all. A `gc.freeze()` control left medians unchanged with p99 spikes present: the tail is sporadic stalls, not garbage collection.
 
-A rung's same-window figure and its full-ladder figure differ by a few percent: the plain route is 17.1 µs in the last same-window run and 18.3 µs in `results_ladder_v3.json`. This site quotes same-window figures for before/after comparisons and the full ladder for the per-server table.
+A rung's same-window figure and its full-ladder figure differ by a few percent: the plain route is 17.1 µs in the last same-window run and 18.3 µs in `results_ladder_v3.json`. The per-change before/after figures on [What changed](what-changed.md) are same-window runs; every table (landing page, benchmarks page, docs overview, README) quotes the full ladder files.
 
 ## The single-machine ceiling
 

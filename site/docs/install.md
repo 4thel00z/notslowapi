@@ -28,7 +28,7 @@ Quote the argument if your shell expands square brackets.
 uv add notslowapi[granian]
 ```
 
-`standard` is inherited from FastAPI and pulls the same set upstream does: `fastapi-cli[standard]`, `fastar`, `httpx` (test client), `jinja2` (templates), `python-multipart` (forms and uploads), `email-validator`, `uvicorn[standard]` (uvicorn with uvloop and httptools), `pydantic-settings` and `pydantic-extra-types`.
+`standard` is FastAPI's extra minus `fastapi-cli` and `fastar`, which depend on the PyPI `fastapi` package and would install it next to notslowapi. It adds `httpx` (test client), `jinja2` (templates), `python-multipart` (forms and uploads), `email-validator`, `uvicorn[standard]` (uvicorn with uvloop and httptools), `pydantic-settings` and `pydantic-extra-types`.
 
 ```console
 uv add notslowapi[standard]
@@ -40,7 +40,6 @@ The two combine:
 uv add "notslowapi[granian,standard]"
 ```
 
-A `standard-no-fastapi-cloud-cli` extra also exists, matching upstream.
 
 ## Check the install
 
