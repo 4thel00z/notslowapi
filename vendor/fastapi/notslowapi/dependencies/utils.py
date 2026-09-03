@@ -78,6 +78,7 @@ from notslowapi.starlette.datastructures import (
     ImmutableMultiDict,
     QueryParams,
     UploadFile,
+    parse_query_string,
 )
 from notslowapi.starlette.requests import HTTPConnection, Request
 from notslowapi.starlette.responses import Response
@@ -645,9 +646,7 @@ async def solve_dependencies(
             if sub_plan.specs:
                 sub_values, sub_errors = extract_params(
                     sub_plan.specs,
-                    request.path_params if sub_plan.needs_path else None,
-                    request.query_params if sub_plan.needs_query else None,
-                    request.headers if sub_plan.needs_headers else None,
+                    request.scope,
                     request.cookies if sub_plan.needs_cookies else None,
                 )
                 if sub_errors:
@@ -712,9 +711,7 @@ async def solve_dependencies(
     if plan.specs:
         param_values, param_errors = extract_params(
             plan.specs,
-            request.path_params if plan.needs_path else None,
-            request.query_params if plan.needs_query else None,
-            request.headers if plan.needs_headers else None,
+            request.scope,
             request.cookies if plan.needs_cookies else None,
         )
         values.update(param_values)
@@ -774,9 +771,7 @@ async def solve_simple(
             if sub_plan.specs:
                 sub_values, sub_errors = extract_params(
                     sub_plan.specs,
-                    request.path_params if sub_plan.needs_path else None,
-                    request.query_params if sub_plan.needs_query else None,
-                    request.headers if sub_plan.needs_headers else None,
+                    request.scope,
                     request.cookies if sub_plan.needs_cookies else None,
                 )
                 if sub_errors:
@@ -822,9 +817,7 @@ async def solve_simple(
     if plan.specs:
         param_values, param_errors = extract_params(
             plan.specs,
-            request.path_params if plan.needs_path else None,
-            request.query_params if plan.needs_query else None,
-            request.headers if plan.needs_headers else None,
+            request.scope,
             request.cookies if plan.needs_cookies else None,
         )
         values.update(param_values)
@@ -923,11 +916,15 @@ def request_params_to_model_arg(
     return {field.name: v_}, errors_
 
 
-ParamEntry = tuple[str, str, str, bool, bool, bool, bool, ModelField]
-"""(name, alias, location, multi, is_sequence, required, is_model, field): one path, query,
-header or cookie parameter. multi: read with getlist (a sequence field on a multidict source);
-is_model: the location's single pydantic-model field, extracted with request_params_to_model_arg.
+ParamEntry = tuple[str, str, str, bool, bool, bool, bool, ModelField, Any]
+"""(name, alias, location, multi, is_sequence, required, is_model, field, lookup): one path,
+query, header or cookie parameter. multi: collect every value (a sequence field on a multidict
+source); is_model: the location's single pydantic-model field, extracted with
+request_params_to_model_arg; lookup: the alias as the raw scope stores it (latin-1 lower-case
+bytes for headers, the alias itself otherwise).
 """
+
+QUERY_ITEMS_KEY = "notslowapi.query_items"
 
 
 @dataclass(frozen=True, slots=True)
@@ -968,21 +965,24 @@ def compile_param_plan(dependant: Dependant) -> ParamPlan:
                     False,
                     True,
                     field,
+                    None,
                 )
             )
             continue
         for field in fields:
             multi = multidict and field.is_sequence and not json_marked(field)
+            alias = field.alias_for_validation
             specs.append(
                 (
                     field.name,
-                    field.alias_for_validation,
+                    alias,
                     field.param_location or location,
                     multi,
                     field.is_sequence,
                     field.field_info.is_required(),
                     False,
                     field,
+                    alias.lower().encode("latin-1") if location == "header" else alias,
                 )
             )
     return ParamPlan(
@@ -1036,31 +1036,85 @@ def field_default_value(field: ModelField) -> Any:
     return deepcopy(field.default)
 
 
+def query_items(scope: Mapping[str, Any]) -> list[tuple[str, str]]:
+    """The parsed query string, parsed once per request and kept in the scope."""
+    items = scope.get(QUERY_ITEMS_KEY)
+    if items is None:
+        items = parse_query_string(scope["query_string"].decode("latin-1"))
+        scope[QUERY_ITEMS_KEY] = items  # type: ignore[index]
+    return items
+
+
 def extract_params(
     specs: tuple[ParamEntry, ...],
-    path_params: Mapping[str, Any] | None,
-    query_params: QueryParams | None,
-    headers: Headers | None = None,
+    scope: Mapping[str, Any],
     cookies: Mapping[str, str] | None = None,
 ) -> tuple[dict[str, Any], list[Any]]:
-    """request_params_to_args for compiled specs: same lookups, defaults, validation and errors."""
+    """request_params_to_args for compiled specs, reading the ASGI scope directly.
+
+    Path params come from scope["path_params"], query values from the query string parsed
+    once per request (last value wins, every value for a multi spec, as QueryParams does),
+    header values from the raw header list (first match, or every match for a multi spec,
+    as Headers does). Model-typed params still get the real QueryParams or Headers object.
+    """
     values: dict[str, Any] = {}
     errors: list[Any] = []
-    for name, alias, location, multi, is_sequence, required, is_model, field in specs:
-        if location == "path":
-            source: Any = path_params
-        elif location == "query":
-            source = query_params
-        elif location == "header":
-            source = headers
-        else:
-            source = cookies
+    path_params: Mapping[str, Any] | None = None
+    query_map: dict[str, str] | None = None
+    for (
+        name,
+        alias,
+        location,
+        multi,
+        is_sequence,
+        required,
+        is_model,
+        field,
+        lookup,
+    ) in specs:
         if is_model:
+            if location == "path":
+                source: Any = scope.get("path_params") or {}
+            elif location == "query":
+                source = QueryParams.from_query_string(scope["query_string"])
+            elif location == "header":
+                source = Headers(scope=scope)  # type: ignore[arg-type]
+            else:
+                source = cookies if cookies is not None else {}
             model_values, model_errors = request_params_to_model_arg(field, source)
             values.update(model_values)
             errors.extend(model_errors)
             continue
-        value = source.getlist(alias) if multi else source.get(alias)
+        if location == "path":
+            if path_params is None:
+                path_params = scope.get("path_params") or {}
+            value: Any = path_params.get(alias)
+        elif location == "query":
+            if multi:
+                value = [
+                    item_value
+                    for item_key, item_value in query_items(scope)
+                    if item_key == alias
+                ]
+            else:
+                if query_map is None:
+                    query_map = dict(query_items(scope))
+                value = query_map.get(alias)
+        elif location == "header":
+            if multi:
+                value = [
+                    header_value.decode("latin-1")
+                    for header_key, header_value in scope["headers"]
+                    if header_key == lookup
+                ]
+            else:
+                value = None
+                for header_key, header_value in scope["headers"]:
+                    if header_key == lookup:
+                        value = header_value.decode("latin-1")
+                        break
+        else:
+            value = cookies.get(alias) if cookies is not None else None
         if value is None or (is_sequence and len(value) == 0):
             if required:
                 errors.append(get_missing_field_error(loc=(location, alias)))
