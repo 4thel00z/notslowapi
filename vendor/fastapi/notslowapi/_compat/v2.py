@@ -198,6 +198,17 @@ class ModelField:
                 errors=exc.errors(include_url=False), loc_prefix=loc
             )
 
+    def validate_json(self, data: bytes) -> Any:
+        """Parse and validate raw JSON bytes in one pydantic-core pass.
+
+        Returns Undefined when parsing or validation fails, so callers can fall
+        back to the json.loads + validate() path that produces the exact errors.
+        """
+        try:
+            return self._type_adapter.validator.validate_json(data)
+        except ValidationError:
+            return Undefined
+
     def serialize(
         self,
         value: Any,

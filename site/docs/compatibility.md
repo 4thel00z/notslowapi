@@ -37,6 +37,7 @@ Nothing is installed under the `starlette` name. Code that imports `starlette.*`
 
 - `notslowapi.middleware.asyncexitstack.AsyncExitStackMiddleware` is still importable but is no longer installed, so the scope no longer carries `fastapi_middleware_astack`.
 - `solve_dependencies` raises `RuntimeError` instead of failing an `assert` when a `yield` dependency runs without an exit stack.
+- A route whose only parameter is one JSON body validates the raw bytes with pydantic-core's JSON validator instead of `json.loads` followed by `validate_python`. Results and errors are identical for ordinary models: anything the JSON validator rejects, and a JSON `null`, is re-run through the upstream path. The one difference is strict models (`ConfigDict(strict=True)` or `Strict[...]`): pydantic's strict JSON mode accepts ISO strings for `datetime`, `date`, `time` and `UUID` fields and integers for `float` fields, where upstream's strict Python mode rejected them with 422, so those requests now succeed.
 
 ## The test suite
 
