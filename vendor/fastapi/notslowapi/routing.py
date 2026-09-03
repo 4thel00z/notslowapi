@@ -474,6 +474,8 @@ def params_route_app(parts: ParamsHandlerParts) -> ASGIApp:
                 specs,
                 scope.get("path_params") or {},
                 QueryParams(scope["query_string"]) if has_query else None,
+                None,
+                None,
             )
             if errors:
                 raise RequestValidationError(

@@ -58,6 +58,7 @@ class Dependant:
     needs_response: bool | None = field(
         default=None, init=False, repr=False, compare=False
     )
+    param_plan: Any = field(default=None, init=False, repr=False, compare=False)
 
 
 _UsesScopesCache = dict[int, tuple[Dependant, bool]]
