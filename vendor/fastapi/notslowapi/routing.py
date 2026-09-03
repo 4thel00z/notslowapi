@@ -101,6 +101,7 @@ from notslowapi.starlette.responses import (
     RedirectResponse,
     Response,
     StreamingResponse,
+    encode_json,
 )
 from notslowapi.starlette.routing import (
     BaseRoute,
@@ -928,6 +929,11 @@ def get_request_handler(
                     exclude_defaults=response_model_exclude_defaults,
                     exclude_none=response_model_exclude_none,
                 )
+
+        elif response_field is None and isinstance(response_class, DefaultPlaceholder):
+
+            def serialize_trivial(raw_response: Any, scope: Scope) -> bytes:
+                return encode_json(jsonable_encoder(raw_response)).encode("utf-8")
 
         trivial_status = _build_response_args(
             status_code=status_code, solved_result=trivial_solved

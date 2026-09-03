@@ -424,3 +424,87 @@ def test_plain_direct_send_emits_the_same_messages_as_a_response() -> None:
 
     anyio.run(run_reference)
     assert direct == reference
+
+
+untyped_app = FastAPI()
+
+
+@untyped_app.get("/dict")
+async def untyped_dict():  # type: ignore[no-untyped-def]
+    return {"a": 1, "b": [1, 2.5, "x", None], "c": {"d": True}}
+
+
+@untyped_app.get("/none")
+async def untyped_none():  # type: ignore[no-untyped-def]
+    return None
+
+
+@untyped_app.get("/text", response_class=PlainTextResponse)
+async def untyped_text():  # type: ignore[no-untyped-def]
+    return "plain text"
+
+
+@untyped_app.get("/params/{n}")
+async def untyped_params(n: int):  # type: ignore[no-untyped-def]
+    return {"n": n}
+
+
+untyped_client = TestClient(untyped_app)
+
+
+def test_untyped_returns_take_the_direct_send_path() -> None:
+    for path in ("/dict", "/none", "/params/{n}"):
+        route = next(
+            r for r in untyped_app.routes if isinstance(r, APIRoute) and r.path == path
+        )
+        assert route.get_route_handler().parts.serialize is not None  # type: ignore[attr-defined]
+    text_route = next(
+        r for r in untyped_app.routes if isinstance(r, APIRoute) and r.path == "/text"
+    )
+    assert text_route.get_route_handler().parts.serialize is None  # type: ignore[attr-defined]
+
+
+def test_untyped_bodies_match_json_response() -> None:
+    import anyio
+
+    async def collect(path: str) -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = []
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": path,
+            "raw_path": path.encode(),
+            "query_string": b"",
+            "headers": [],
+            "root_path": "",
+            "scheme": "http",
+            "server": ("testserver", 80),
+            "client": ("testclient", 1),
+            "http_version": "1.1",
+        }
+
+        async def receive() -> dict[str, Any]:
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message: dict[str, Any]) -> None:
+            messages.append(message)
+
+        await untyped_app(scope, receive, send)
+        return messages
+
+    async def reference(content: Any) -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = []
+
+        async def send(message: dict[str, Any]) -> None:
+            messages.append(message)
+
+        await JSONResponse(content)({"type": "http"}, None, send)  # type: ignore[arg-type]
+        return messages
+
+    assert anyio.run(collect, "/dict") == anyio.run(
+        reference, {"a": 1, "b": [1, 2.5, "x", None], "c": {"d": True}}
+    )
+    assert anyio.run(collect, "/none") == anyio.run(reference, None)
+    assert anyio.run(collect, "/params/7") == anyio.run(reference, {"n": 7})
+    assert untyped_client.get("/text").text == "plain text"
+    assert untyped_client.get("/text").headers["content-type"].startswith("text/plain")
