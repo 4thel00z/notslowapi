@@ -72,6 +72,14 @@ def request_response(
             sender = send
         try:
             response = await f(request)
+            if type(response).__call__ is Response.__call__ and response.background is None:
+                # The same two messages Response.__call__ sends, without its frame and the sender wrapper.
+                tracker[0] = True
+                await send(
+                    {"type": "http.response.start", "status": response.status_code, "headers": response.raw_headers}
+                )
+                await send({"type": "http.response.body", "body": response.body})
+                return
             await response(scope, receive, sender)
         except Exception as exc:
             handler = find_exception_handler(exc, scope)
@@ -811,20 +819,33 @@ class Router:
 
         for route in self.candidate_routes(route_path):
             # Determine if any route matches the incoming scope,
-            # and hand over to the matching route if found.
-            if (
-                scope_type == "http"
-                and type(route) is Route
-                and not route.param_convertors
-                and route.path == route_path
-            ):
+            # and hand over to the matching route if found. A plain Route is matched
+            # here (static compare or regex plus convertors) and, on a full match,
+            # dispatched to its app directly; Route.handle only repeats the method check.
+            if scope_type == "http" and type(route) is Route:
+                convertors = route.param_convertors
+                if convertors:
+                    path_match = route.path_regex.match(route_path)
+                    if not path_match:
+                        continue
+                    matched_params = path_match.groupdict()
+                    for key, value in matched_params.items():
+                        matched_params[key] = convertors[key].convert(value)
+                elif route.path == route_path:
+                    matched_params = {}
+                else:
+                    continue
                 parent_params = scope.get("path_params")
-                child_scope = {
-                    "endpoint": route.endpoint,
-                    "path_params": dict(parent_params) if parent_params else {},
-                }
+                path_params = dict(parent_params) if parent_params else {}
+                path_params.update(matched_params)
+                child_scope = {"endpoint": route.endpoint, "path_params": path_params}
                 methods = route.methods
-                match = Match.PARTIAL if methods and scope["method"] not in methods else Match.FULL
+                if not methods or scope["method"] in methods:
+                    scope["route"] = route
+                    scope.update(child_scope)
+                    await route.app(scope, receive, send)
+                    return
+                match = Match.PARTIAL
             else:
                 match, child_scope = route.matches(scope)
             if match == Match.FULL:
