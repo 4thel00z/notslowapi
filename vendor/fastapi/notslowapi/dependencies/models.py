@@ -49,6 +49,15 @@ class Dependant:
     use_cache: bool = True
     path: str | None = None
     scope: Literal["function", "request"] | None = None
+    cache_key: DependencyCacheKey | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+    call_kinds: tuple[bool, bool] | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+    needs_response: bool | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
 
 
 _UsesScopesCache = dict[int, tuple[Dependant, bool]]
@@ -232,3 +241,34 @@ def _get_computed_scope(*, dependant: Dependant) -> str | None:
     if _is_gen_callable(dependant.call) or _is_async_gen_callable(dependant.call):
         return "request"
     return None
+
+
+def dependant_cache_key(dependant: Dependant) -> DependencyCacheKey:
+    """_get_cache_key computed once per Dependant; it depends only on the dependant tree."""
+    key = dependant.cache_key
+    if key is None:
+        key = dependant.cache_key = _get_cache_key(dependant=dependant)
+    return key
+
+
+def dependant_call_kinds(dependant: Dependant) -> tuple[bool, bool]:
+    """(is_generator, is_coroutine) of the dependant's call, computed once per Dependant."""
+    kinds = dependant.call_kinds
+    if kinds is None:
+        call = dependant.call
+        kinds = dependant.call_kinds = (
+            _is_gen_callable(call) or _is_async_gen_callable(call),
+            _is_coroutine_callable(call),
+        )
+    return kinds
+
+
+def dependant_needs_response(dependant: Dependant) -> bool:
+    """Whether the dependant or any sub-dependant takes a Response parameter, computed once."""
+    needs = dependant.needs_response
+    if needs is None:
+        needs = dependant.needs_response = (
+            dependant.response_param_name is not None
+            or any(dependant_needs_response(sub) for sub in dependant.dependencies)
+        )
+    return needs
