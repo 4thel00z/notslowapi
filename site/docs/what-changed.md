@@ -45,12 +45,13 @@ Included routes rebuilt their handler on every request; it is cached now, routes
 
 ## Exception handling and dispatch frames
 
-Response-start tracking became plain functions, then one tracker shared through the scope; without user middleware, `ServerErrorMiddleware`, `ExceptionMiddleware` and the router became one `ExceptionHandlingMiddleware` (apps with user middleware keep all three); `APIRoute.handle`, `FastAPI.__call__` and `request_response` each dropped a frame; `JSONResponse.render` calls the C encoder directly. The shared-tracker commit went unmeasured; its window was too noisy. Later, `APIRouter.app` matches dynamic routes inline and awaits the route's ASGI app directly on a full match, and a coroutine endpoint without parameters runs inside the request wrapper's own coroutine (`trivial_route_app`) instead of behind a handler frame. Routes with dependencies but no `yield` dependency get the one-frame app too, with one per-request check that hands the request to the general app whenever `dependency_overrides` are set.
+Response-start tracking became plain functions, then one tracker shared through the scope; without user middleware, `ServerErrorMiddleware`, `ExceptionMiddleware` and the router became one `ExceptionHandlingMiddleware` (apps with user middleware keep all three); `APIRoute.handle`, `FastAPI.__call__` and `request_response` each dropped a frame; `JSONResponse.render` calls the C encoder directly. The shared-tracker commit went unmeasured; its window was too noisy. Later, `APIRouter.app` matches dynamic routes inline and awaits the route's ASGI app directly on a full match, and a coroutine endpoint without parameters runs inside the request wrapper's own coroutine (`trivial_route_app`) instead of behind a handler frame. Routes with dependencies but no `yield` dependency get the one-frame app too, with one per-request check that hands the request to the general app whenever `dependency_overrides` are set. The vendored Starlette router got the same treatment: plain routes are matched inline and dispatched to their app directly, `request_response` sends a plain response itself, and `JSONResponse` builds its headers without the generic walk.
 
 - l2_fastapi_dict: 24.6 → 23.8, then 18.9 → 18.2, then 19.4 → 18.9
 - l1_starlette: 18.6 → 18.0, then 17.5 → 16.8 (granian 10.2 → 9.4)
 - l2_fastapi_dict: 17.5 → 17.2, on granian 9.2 → 8.9; l3_fastapi_params: 22.4 → 22.0, on granian 11.9 → 11.3
 - l6_fastapi_depends: 27.1 → 25.8; on granian 17.7 → 16.1
+- l1_starlette: 16.9 → 16.3; l1b_starlette_params: 18.7 → 17.8; l1c_starlette_50routes: 16.8 → 16.3; on granian l1_starlette flat (8.8 → 8.8)
 
 ## JSON encoding
 

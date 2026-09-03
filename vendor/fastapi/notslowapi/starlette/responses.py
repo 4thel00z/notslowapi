@@ -204,6 +204,9 @@ def encode_json(content: Any) -> str:
     return "".join(chunks)
 
 
+JSON_CONTENT_TYPE_HEADER = (b"content-type", b"application/json")
+
+
 class JSONResponse(Response):
     media_type = "application/json"
 
@@ -215,7 +218,24 @@ class JSONResponse(Response):
         media_type: str | None = None,
         background: BackgroundTask | None = None,
     ) -> None:
-        super().__init__(content, status_code, headers, media_type, background)
+        if headers is not None or media_type is not None:
+            super().__init__(content, status_code, headers, media_type, background)
+            return
+        # What Response.__init__ and init_headers produce with no extra headers, without their walk;
+        # a subclass may still override media_type or charset.
+        self.status_code = status_code
+        self.background = background
+        body = self.render(content)
+        self.body = body
+        raw_headers: list[tuple[bytes, bytes]] = []
+        if not (status_code < 200 or status_code in (204, 304)):
+            raw_headers.append((b"content-length", b"%d" % len(body)))
+        media = self.media_type
+        if media is not None:
+            raw_headers.append(
+                JSON_CONTENT_TYPE_HEADER if media == "application/json" else content_type_header(media, self.charset)
+            )
+        self.raw_headers = raw_headers
 
     def render(self, content: Any) -> bytes:
         return encode_json(content).encode("utf-8")
