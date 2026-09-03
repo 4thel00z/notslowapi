@@ -126,6 +126,26 @@ def generate_encoders_by_class_tuples(
 encoders_by_class_tuples = generate_encoders_by_class_tuples(ENCODERS_BY_TYPE)
 
 
+def is_plain_json(obj: Any, sqlalchemy_safe: bool) -> bool:
+    """True when jsonable_encoder would rebuild obj into an equal structure: only exact
+    str, int, float, bool, None, list and str-keyed dict, with no _sa keys when sqlalchemy_safe."""
+    kind = type(obj)
+    if kind is str or kind is int or kind is float or kind is bool or obj is None:
+        return True
+    if kind is dict:
+        for key, value in obj.items():
+            if type(key) is not str:
+                return False
+            if sqlalchemy_safe and key.startswith("_sa"):
+                return False
+            if not is_plain_json(value, sqlalchemy_safe):
+                return False
+        return True
+    if kind is list:
+        return all(is_plain_json(value, sqlalchemy_safe) for value in obj)
+    return False
+
+
 def jsonable_encoder(
     obj: Annotated[
         Any,
@@ -229,6 +249,14 @@ def jsonable_encoder(
     [FastAPI docs for JSON Compatible Encoder](https://fastapi.tiangolo.com/tutorial/encoder/).
     """
     custom_encoder = custom_encoder or {}
+    if (
+        not custom_encoder
+        and include is None
+        and exclude is None
+        and not exclude_none
+        and is_plain_json(obj, sqlalchemy_safe)
+    ):
+        return obj
     if custom_encoder:
         if type(obj) in custom_encoder:
             return custom_encoder[type(obj)](obj)
