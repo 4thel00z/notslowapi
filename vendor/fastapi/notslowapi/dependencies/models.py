@@ -60,6 +60,7 @@ class Dependant:
     )
     param_plan: Any = field(default=None, init=False, repr=False, compare=False)
     is_leaf: bool | None = field(default=None, init=False, repr=False, compare=False)
+    is_simple: bool | None = field(default=None, init=False, repr=False, compare=False)
 
 
 _UsesScopesCache = dict[int, tuple[Dependant, bool]]
@@ -285,6 +286,27 @@ def dependant_is_leaf(dependant: Dependant) -> bool:
             or dependant.security_scopes_param_name
         )
     return leaf
+
+
+def dependant_is_simple(dependant: Dependant) -> bool:
+    """Whether the dependant and its whole subtree need only path, query, header and cookie params.
+
+    No body params and none of the request, response, background-tasks or security-scopes
+    parameters anywhere below, so the subtree can be solved without the response,
+    background and body bookkeeping of solve_dependencies.
+    """
+    simple = dependant.is_simple
+    if simple is None:
+        simple = dependant.is_simple = not (
+            dependant.body_params
+            or dependant.request_param_name
+            or dependant.http_connection_param_name
+            or dependant.websocket_param_name
+            or dependant.response_param_name
+            or dependant.background_tasks_param_name
+            or dependant.security_scopes_param_name
+        ) and all(dependant_is_simple(sub) for sub in dependant.dependencies)
+    return simple
 
 
 def dependant_needs_response(dependant: Dependant) -> bool:
