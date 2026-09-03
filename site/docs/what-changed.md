@@ -38,10 +38,11 @@ Response-start tracking became plain functions, then one tracker shared through 
 
 ## JSON encoding
 
-Content-type headers come from a cache, `JSONResponse` reuses one encoder, and `jsonable_encoder` returns plain `str`, `int`, `float`, `bool`, `None`, `list` and str-keyed `dict` values unchanged when no include, exclude or custom encoder is set. For a coroutine endpoint without parameters the wrapper now validates and serializes straight to bytes, decides status, body and `content-length` at build time, sends the two ASGI messages itself instead of building a `Response`, and creates the `Request` only when an exception needs it.
+Content-type headers come from a cache, `JSONResponse` reuses one encoder, and `jsonable_encoder` returns plain `str`, `int`, `float`, `bool`, `None`, `list` and str-keyed `dict` values unchanged when no include, exclude or custom encoder is set. For a coroutine endpoint without parameters the wrapper now validates and serializes straight to bytes, decides status, body and `content-length` at build time, sends the two ASGI messages itself instead of building a `Response`, and creates the `Request` only when an exception needs it. Coroutine endpoints with parameters and no dependencies take the same path after the solver runs, unless a `Response` or `BackgroundTasks` parameter took part.
 
 - l1_starlette: 19.4 → 18.6; l2b_fastapi_untyped: 20.3 → 18.0 (49.2k → 55.4k req/s)
 - l2_fastapi_dict: 17.9 → 16.6 (55.9k → 60.2k req/s), on granian 9.9 → 9.1; l2b_fastapi_untyped: 18.9 → 18.3
+- l3_fastapi_params: 22.7 → 21.7 (minimums 22.5 → 21.2), on granian minimums 12.4 → 11.4 in a loaded window
 
 ## Routing
 

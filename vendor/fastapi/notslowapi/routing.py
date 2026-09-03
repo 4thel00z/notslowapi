@@ -341,12 +341,99 @@ def trivial_route_app(parts: TrivialHandlerParts) -> ASGIApp:
     return app
 
 
+@dataclass(frozen=True)
+class PlainHandlerParts:
+    """What plain_route_app needs for a coroutine endpoint with parameters but no dependencies.
+
+    solve is solve_dependencies bound to the route; respond builds the Response the
+    general way when a Response or BackgroundTasks parameter took part, serialize
+    returns the JSON bytes otherwise.
+    """
+
+    solve: Callable[..., Awaitable[SolvedDependency]]
+    call: Callable[..., Awaitable[Any]]
+    respond: Callable[[Any, Scope, SolvedDependency], Response]
+    serialize: Callable[[Any, Scope], bytes] | None
+    status_code: int
+    body_allowed: bool
+    with_content_length: bool
+    endpoint_context: Callable[[Scope], EndpointContext]
+
+
+def plain_route_app(parts: PlainHandlerParts) -> ASGIApp:
+    """trivial_request_response with plain_app inlined: solve, call, serialize and send in one coroutine."""
+    solve = parts.solve
+    call = parts.call
+    respond = parts.respond
+    serialize = parts.serialize
+    status_code = parts.status_code
+    body_allowed = parts.body_allowed
+    with_content_length = parts.with_content_length
+    endpoint_context = parts.endpoint_context
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        request = Request(scope, receive, send)
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        try:
+            solved = await solve(
+                request=request, async_exit_stack=scope.get("fastapi_inner_astack")
+            )
+            if solved.errors:
+                raise RequestValidationError(
+                    solved.errors, body=None, endpoint_ctx=endpoint_context(scope)
+                )
+            raw_response = await call(**solved.values)
+            if isinstance(raw_response, Response):
+                if raw_response.background is None:
+                    raw_response.background = solved.background_tasks
+                await raw_response(scope, receive, sender)
+                return
+            if (
+                serialize is None
+                or solved.response is not None
+                or solved.background_tasks is not None
+            ):
+                await respond(raw_response, scope, solved)(scope, receive, sender)
+                return
+            body = serialize(raw_response, scope)
+            if not body_allowed:
+                body = b""
+            if with_content_length:
+                headers = [
+                    (b"content-length", b"%d" % len(body)),
+                    JSON_CONTENT_TYPE_HEADER,
+                ]
+            else:
+                headers = [JSON_CONTENT_TYPE_HEADER]
+            tracker[0] = True
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": status_code,
+                    "headers": headers,
+                }
+            )
+            await send({"type": "http.response.body", "body": body})
+        except Exception as exc:
+            await send_route_exception_response(
+                exc, request, scope, receive, sender, tracker
+            )
+
+    return app
+
+
 def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGIApp:
     """The ASGI app for a route: the one-frame variant when no exit stack can ever be needed.
 
     Without sub-dependencies nothing can be overridden into a dependency with yield, so the
     build-time uses_exit_stacks decision is final. A handler carrying TrivialHandlerParts
-    (a coroutine endpoint without parameters, from an un-overridden get_route_handler) is
+    or PlainHandlerParts (a coroutine endpoint from an un-overridden get_route_handler) is
     inlined into the wrapper.
     """
     if route.uses_exit_stacks or route.dependant.dependencies:
@@ -354,6 +441,8 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
     parts = getattr(handler, "parts", None)
     if isinstance(parts, TrivialHandlerParts):
         return trivial_route_app(parts)
+    if isinstance(parts, PlainHandlerParts):
+        return plain_route_app(parts)
     return trivial_request_response(handler)
 
 
@@ -902,6 +991,46 @@ def get_request_handler(
                 endpoint_ctx_factory=functools.partial(endpoint_context, request),
             )
         return build_response(content, solved_result)
+
+    if is_coroutine:
+
+        def respond_plain(
+            raw_response: Any, scope: Scope, solved: SolvedDependency
+        ) -> Response:
+            content = serialize_response_sync(
+                field=response_field,
+                response_content=raw_response,
+                include=response_model_include,
+                exclude=response_model_exclude,
+                by_alias=response_model_by_alias,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                exclude_none=response_model_exclude_none,
+                dump_json=use_dump_json,
+                endpoint_ctx_factory=functools.partial(
+                    endpoint_context_for_scope, scope
+                ),
+            )
+            return build_response(content, solved)
+
+        plain_app.parts = PlainHandlerParts(  # type: ignore[attr-defined]
+            solve=functools.partial(
+                solve_dependencies,
+                dependant=dependant,
+                body=None,
+                dependency_overrides_provider=dependency_overrides_provider,
+                embed_body_fields=embed_body_fields,
+            ),
+            call=call,
+            respond=respond_plain,
+            serialize=serialize_trivial,
+            status_code=trivial_status,
+            body_allowed=is_body_allowed_for_status_code(trivial_status),
+            with_content_length=not (
+                trivial_status < 200 or trivial_status in (204, 304)
+            ),
+            endpoint_context=endpoint_context_for_scope,
+        )
 
     if not body_field and not is_sse_stream and not is_json_stream and not is_generator:
         if dependant_is_trivial(dependant):
