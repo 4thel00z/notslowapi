@@ -37,7 +37,7 @@
   <section class="hero">
     <div class="wrap">
       <h1>FastAPI, minus the slow.</h1>
-      <p class="lead">notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same test suite, drop-in. On one core, on granian, it serves 3.4× the requests per second of FastAPI 0.141 on uvicorn for a plain JSON route.</p>
+      <p class="lead">notslowapi is a fork of FastAPI made faster, measured layer by layer. Same API, same test suite, drop-in. On one core, on granian, it serves 3.7× the requests per second of FastAPI 0.141 on uvicorn for a plain JSON route.</p>
 
       <div class="install" id="install">
         <ol class="install-rows">
@@ -139,26 +139,26 @@
               <tr>
                 <th scope="row">Plain JSON route</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">31.2 µs</span><span class="sub">32,000 req/s</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">18.3 µs</span><span class="sub">54,800 req/s</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">9.1 µs</span><span class="sub">110,200 req/s</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">15.8 µs</span><span class="sub">63,400 req/s</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">8.5 µs</span><span class="sub">117,300 req/s</span></span></td>
               </tr>
               <tr>
                 <th scope="row">int path + str query param</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">57.0 µs</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">24.2 µs</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">14.3 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">18.3 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">9.0 µs</span></span></td>
               </tr>
               <tr>
                 <th scope="row">pydantic body + response_model</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="val">52.1 µs</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">26.1 µs</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">20.1 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">21.1 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">14.1 µs</span></span></td>
               </tr>
               <tr>
                 <th scope="row">50 routes via include_router</th>
                 <td data-col="FastAPI 0.141 on uvicorn"><span class="cell"><span class="is-na">not measured</span></span></td>
-                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">26.3 µs</span></span></td>
-                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">17.3 µs</span></span></td>
+                <td data-col="notslowapi on uvicorn"><span class="cell"><span class="val">16.7 µs</span></span></td>
+                <td data-col="notslowapi on granian" class="is-hi"><span class="cell"><span class="val">8.5 µs</span></span></td>
               </tr>
             </tbody>
           </table>
@@ -307,7 +307,7 @@
     <div class="wrap deploy-grid">
       <div>
         <h2>Deploy on granian</h2>
-        <p class="lead">Use granian. Its Rust I/O threads run alongside the Python thread instead of sharing it. If you stay on uvicorn, the plain route still runs 1.7× faster than FastAPI 0.141; pass the three flags below.</p>
+        <p class="lead">Use granian. Its Rust I/O threads run alongside the Python thread instead of sharing it. If you stay on uvicorn, the plain route still runs 2.0× faster than FastAPI 0.141; pass the three flags below.</p>
       </div>
       <div class="deploy-panels">
         <div class="deploy-panel">
@@ -360,19 +360,19 @@
       </div>
       <ul class="stats">
         <li class="stat">
-          <strong>3.4×</strong>
+          <strong>3.7×</strong>
           <span class="stat-what">throughput per core</span>
-          <p>Plain JSON route, notslowapi on granian against FastAPI 0.141 on uvicorn: 110,200 req/s against 32,000.</p>
+          <p>Plain JSON route, notslowapi on granian against FastAPI 0.141 on uvicorn: 117,300 req/s against 32,000.</p>
         </li>
         <li class="stat">
-          <strong>2.4×</strong>
+          <strong>3.1×</strong>
           <span class="stat-what">on typed params</span>
-          <p>int path + str query param, both on uvicorn: 57.0 µs per request down to 24.2.</p>
+          <p>int path + str query param, both on uvicorn: 57.0 µs per request down to 18.3.</p>
         </li>
         <li class="stat">
-          <strong>2.0×</strong>
+          <strong>2.5×</strong>
           <span class="stat-what">on a pydantic body</span>
-          <p>pydantic body + response_model, both on uvicorn: 52.1 µs per request down to 26.1.</p>
+          <p>pydantic body + response_model, both on uvicorn: 52.1 µs per request down to 21.1.</p>
         </li>
       </ul>
     </div>

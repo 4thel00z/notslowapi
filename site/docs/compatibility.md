@@ -41,7 +41,7 @@ Nothing is installed under the `starlette` name. Code that imports `starlette.*`
 
 ## The test suite
 
-The merged suite is FastAPI's tests plus Starlette's under `tests/starlette`: 4,493 pass. Three files are skipped because their packages are not installed here (fastapi-cli, strawberry, the OpenTelemetry SDK). CI runs ruff on both trees and then the suite from `vendor/fastapi`, where the tests expect to find their fixture files:
+The merged suite is FastAPI's tests plus Starlette's under `tests/starlette`: 4,563 pass. Three files are skipped because their packages are not installed here (fastapi-cli, strawberry, the OpenTelemetry SDK). CI runs ruff on both trees and then the suite from `vendor/fastapi`, where the tests expect to find their fixture files:
 
 ```console
 uv sync --group test
