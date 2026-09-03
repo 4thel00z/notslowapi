@@ -22,6 +22,12 @@ Routes whose parameters are only path and query params still ran the general sol
 
 - l3_fastapi_params: 21.4 → 18.9 (46.7k → 52.9k req/s); on granian 11.4 → 10.0 (87.7k → 100.0k req/s)
 
+## Dependency facts computed once
+
+A route with three `Depends` (one nested; a path param, a header and pagination query params arriving through them, the shape most applications have) cost twice the params route, and the profile showed work that is constant per dependant being redone on every request: the dependency cache key (`_uses_scopes` walking the sub-tree and unwrapping callables, `_get_computed_scope` re-running the generator checks), the coroutine and generator classification of each dependency, a `typing.cast(Callable[..., Any], …)` that builds a generic alias, and a throwaway `Response` for every route with dependencies. `Dependant` now caches its cache key, call kinds and whether any dependency takes a `Response`, and `solve_dependencies` uses them.
+
+- l6_fastapi_depends: 38.1 → 28.9 (26.2k → 34.6k req/s); on granian 29.6 → 19.8 (33.8k → 50.5k req/s)
+
 ## Exit stacks and middleware only where needed
 
 Two `AsyncExitStack`s were opened per request though only dependencies with `yield` and SSE use them; routes now decide at build time, `AsyncExitStackMiddleware` is no longer installed, and routes that never need a stack get a one-frame app.

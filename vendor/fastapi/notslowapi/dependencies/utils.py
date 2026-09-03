@@ -59,9 +59,11 @@ from notslowapi.dependencies.models import (
     _get_computed_scope,
     _get_oauth_scopes,
     _is_async_gen_callable,
-    _is_coroutine_callable,
     _is_gen_callable,
     _UsesScopesCache,
+    dependant_cache_key,
+    dependant_call_kinds,
+    dependant_needs_response,
 )
 from notslowapi.exceptions import DependencyScopeError
 from notslowapi.logger import logger
@@ -97,6 +99,9 @@ multipart_incorrect_install_error = (
     'And then install "python-multipart" with: \n\n'
     "pip install python-multipart\n"
 )
+
+
+AnyCallable = Callable[..., Any]
 
 
 def ensure_multipart_is_installed() -> None:
@@ -608,26 +613,22 @@ async def solve_dependencies(
 ) -> SolvedDependency:
     values: dict[str, Any] = {}
     errors: list[Any] = []
-    if response is None and (dependant.dependencies or dependant.response_param_name):
+    if response is None and dependant_needs_response(dependant):
         response = Response()
         del response.headers["content-length"]
         response.status_code = None  # type: ignore
     if dependency_cache is None:
         dependency_cache = {}
-    if _uses_scopes_cache is None and dependant.dependencies:
-        _uses_scopes_cache = {}
+    overrides = (
+        dependency_overrides_provider.dependency_overrides
+        if dependency_overrides_provider
+        else None
+    )
     for sub_dependant in dependant.dependencies:
-        sub_dependant.call = cast(Callable[..., Any], sub_dependant.call)
-        call = sub_dependant.call
+        call = cast(AnyCallable, sub_dependant.call)
         use_sub_dependant = sub_dependant
-        if (
-            dependency_overrides_provider
-            and dependency_overrides_provider.dependency_overrides
-        ):
-            original_call = sub_dependant.call
-            call = getattr(
-                dependency_overrides_provider, "dependency_overrides", {}
-            ).get(original_call, original_call)
+        if overrides:
+            call = overrides.get(call, call)
             use_path: str = sub_dependant.path  # type: ignore
             use_sub_dependant = get_dependant(
                 path=use_path,
@@ -653,33 +654,30 @@ async def solve_dependencies(
         if solved_result.errors:
             errors.extend(solved_result.errors)
             continue
-        sub_dependant_cache_key = _get_cache_key(
-            dependant=sub_dependant,
-            uses_scopes_cache=_uses_scopes_cache,
-        )
+        sub_dependant_cache_key = dependant_cache_key(sub_dependant)
         if sub_dependant.use_cache and sub_dependant_cache_key in dependency_cache:
             solved = dependency_cache[sub_dependant_cache_key]
-        elif _is_gen_callable(use_sub_dependant.call) or _is_async_gen_callable(
-            use_sub_dependant.call
-        ):
-            use_astack = request.scope.get(
-                "fastapi_function_astack"
-                if sub_dependant.scope == "function"
-                else "fastapi_inner_astack"
-            )
-            if not isinstance(use_astack, AsyncExitStack):
-                raise RuntimeError(
-                    "dependency with yield needs an exit stack in the request scope"
-                )
-            solved = await _solve_generator(
-                dependant=use_sub_dependant,
-                stack=use_astack,
-                sub_values=solved_result.values,
-            )
-        elif _is_coroutine_callable(use_sub_dependant.call):
-            solved = await call(**solved_result.values)
         else:
-            solved = await run_in_threadpool(call, **solved_result.values)
+            is_generator, is_coroutine = dependant_call_kinds(use_sub_dependant)
+            if is_generator:
+                use_astack = request.scope.get(
+                    "fastapi_function_astack"
+                    if sub_dependant.scope == "function"
+                    else "fastapi_inner_astack"
+                )
+                if not isinstance(use_astack, AsyncExitStack):
+                    raise RuntimeError(
+                        "dependency with yield needs an exit stack in the request scope"
+                    )
+                solved = await _solve_generator(
+                    dependant=use_sub_dependant,
+                    stack=use_astack,
+                    sub_values=solved_result.values,
+                )
+            elif is_coroutine:
+                solved = await call(**solved_result.values)
+            else:
+                solved = await run_in_threadpool(call, **solved_result.values)
         if sub_dependant.name is not None:
             values[sub_dependant.name] = solved
         if sub_dependant_cache_key not in dependency_cache:
