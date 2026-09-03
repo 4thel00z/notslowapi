@@ -2,7 +2,7 @@
 
 notslowapi is a fork of FastAPI 0.141.1 that does less work per request. The public API is the one you already use, and the upstream test suite passes unchanged: 4,493 tests across FastAPI and Starlette. The changes are inside the framework: parameter extraction, the dependency solver, routing, exception handling and response encoding. Every change is one commit with a before and after measurement, and the numbers and profiles are committed to the repository.
 
-The Starlette it depends on (1.6.0) is modified as well and ships inside the package as `notslowapi.starlette`. Nothing is installed under the `starlette` name, so notslowapi can sit next to an upstream Starlette install without either overwriting the other. The first release is 0.1.0. FastAPI code is MIT licensed; the vendored Starlette keeps its BSD-3 license.
+The Starlette it depends on (1.6.0) is modified as well and ships inside the package as `notslowapi.starlette`. Nothing is installed under the `starlette` name, so notslowapi can sit next to an upstream Starlette install without either overwriting the other. The current release is 0.2.0. FastAPI code is MIT licensed; the vendored Starlette keeps its BSD-3 license.
 
 ## The switch
 
@@ -26,7 +26,7 @@ granian --interface asgi --workers 1 --loop uvloop myapp:app
 
 ## Numbers
 
-One core, Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of 3 x 5 s runs. The first column is upstream FastAPI 0.141.1 on uvicorn at the start of the work; the other two are notslowapi 0.1.0.
+One core, Apple M3 Pro, Python 3.13, 64 keep-alive connections, median of 3 x 5 s runs. The first column is upstream FastAPI 0.141.1 on uvicorn at the start of the work; the other two are the current master (all changes through 0.2.0).
 
 | route | FastAPI 0.141 on uvicorn | notslowapi on uvicorn | notslowapi on granian |
 |---|---|---|---|
