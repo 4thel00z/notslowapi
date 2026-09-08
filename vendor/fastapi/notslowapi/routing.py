@@ -112,6 +112,7 @@ from notslowapi.starlette.routing import (
     BaseRoute,
     Match,
     NoMatchFound,
+    RoutesGeneration,
     compile_path,
     get_name,
 )
@@ -2276,6 +2277,21 @@ class APIRoute(routing.Route):
             self.uses_exit_stacks, self.dependency_overrides_provider
         )
 
+    def effective_app(self, effective_context: Any) -> ASGIApp:
+        """The ASGI app for this route as included under effective_context, built on first use."""
+        app = effective_context.app
+        if app is not None:
+            return app
+        token = _effective_route_context_var.set(effective_context)
+        try:
+            app = route_app(
+                cast(_APIRouteLike, effective_context), self.get_route_handler()
+            )
+        finally:
+            _effective_route_context_var.reset(token)
+        effective_context.app = app
+        return app
+
     def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
         route = cast(_APIRouteLike, self)
         # TODO: Replace or deprecate this no-scope hook so included-route
@@ -2325,18 +2341,7 @@ class APIRoute(routing.Route):
                 )
                 await response(scope, receive, send)
                 return
-            app = effective_context.app
-            if app is None:
-                token = _effective_route_context_var.set(effective_context)
-                try:
-                    app = route_app(
-                        cast(_APIRouteLike, effective_context),
-                        self.get_route_handler(),
-                    )
-                finally:
-                    _effective_route_context_var.reset(token)
-                effective_context.app = app
-            await app(scope, receive, send)
+            await self.effective_app(effective_context)(scope, receive, send)
             return
         methods = self.methods
         if methods and scope["method"] not in methods:
@@ -2693,11 +2698,17 @@ class _IncludedRouter(BaseRoute):
         return self.effective_index.get(route_path, self.effective_rest)
 
     def effective_candidates(self) -> list["_EffectiveRouteContext | _IncludedRouter"]:
-        routes_version = self.original_router._get_routes_version()
+        """The candidates for the original router's routes, rebuilt after any route list changed.
+
+        The check is one comparison against RoutesGeneration, which every RouteList
+        mutation and every APIRouter route change advances, instead of a walk over the
+        nested routers' versions on each request.
+        """
+        routes_version = RoutesGeneration.value
         if routes_version == self._effective_candidates_version:
             return self._effective_candidates
         with self._effective_routes_lock:
-            routes_version = self.original_router._get_routes_version()
+            routes_version = RoutesGeneration.value
             if routes_version == self._effective_candidates_version:
                 return self._effective_candidates
             effective_candidates: list[_EffectiveRouteContext | _IncludedRouter] = []
@@ -3756,6 +3767,7 @@ class APIRouter(routing.Router):
 
     def _mark_routes_changed(self) -> None:
         self._routes_version += 1
+        RoutesGeneration.value += 1
 
     def _get_routes_version(self, seen: set[int] | None = None) -> int:
         nested = self._nested_included_routers()
@@ -3972,7 +3984,9 @@ class APIRouter(routing.Router):
                 selected = route.static_full_match(route_path, scope["method"])
                 if selected is not None:
                     included_router, effective_context = selected
-                    fastapi_scope = _get_fastapi_scope(scope)
+                    fastapi_scope = scope.get(_FASTAPI_SCOPE_KEY)
+                    if fastapi_scope is None:
+                        fastapi_scope = scope[_FASTAPI_SCOPE_KEY] = {}
                     fastapi_scope[_FASTAPI_INCLUDED_ROUTER_KEY] = included_router
                     fastapi_scope[_FASTAPI_EFFECTIVE_ROUTE_CONTEXT_KEY] = (
                         effective_context
@@ -3982,7 +3996,10 @@ class APIRouter(routing.Router):
                     scope["endpoint"] = effective_context.endpoint
                     original_route = effective_context.original_route
                     scope["route"] = original_route
-                    await original_route.handle(scope, receive, send)
+                    app = effective_context.app
+                    if app is None:
+                        app = original_route.effective_app(effective_context)
+                    await app(scope, receive, send)
                     return
                 match, child_scope = route.matches(scope)
             else:

@@ -79,6 +79,12 @@ Every route was matched in order; an index per routes version now maps each stat
 - l2c_fastapi_included: 26.8 → 23.1; l2_fastapi_dict: 17.8 → 17.1
 - l2c_fastapi_included: 21.0 → 18.3; l5b_fastapi_50routes_included: 26.6 → 20.6 (37.6k → 48.5k req/s), on granian 17.5 → 10.7 (57.1k → 93.5k req/s)
 
+## Included routes dispatched without the handle frame
+
+Nearly every application mounts its routes with `include_router`, and an included static route still cost about 0.8 µs more than the same route declared on the app. After `static_full_match` had already picked the route and checked the method, the router awaited `APIRoute.handle`, which looked the effective context up in the scope again, checked the method again and only then awaited the route's cached app; on every request `effective_candidates` also walked the nested routers' version counters to decide whether its index was current, and the scope's notslowapi dict was fetched through a helper with a setdefault and an assert. The router now awaits the effective context's app directly (built on first use by `APIRoute.effective_app`, which `handle` shares), the freshness check is one comparison against `RoutesGeneration`, a process-wide counter that every `RouteList` mutation and every `APIRouter` route change advances, and the scope dict is read with one `get`. Routes added to a router after it was included stay reachable, and dynamic routes, method mismatches and overridden `handle` methods keep the general path.
+
+- l2c_fastapi_included: 17.6 → 17.3 (56.8k → 57.8k req/s); on granian 9.3 → 9.1 best of five (medians 10.4 → 9.3, two before-runs hit by a load burst); l5b_fastapi_50routes_included on granian 9.7 → 9.3; five pairs, control l2_fastapi_dict on granian 9.2 → 9.2
+
 ## Route index by literal prefix
 
 The route index put every dynamic route into every static path's candidate list, so an app declaring `/p0/{item_id}` … `/p9/{item_id}` before forty static routes regex-tested all ten on each request for a static path. A route's regex is anchored and starts with the literal before its first parameter, so a dynamic route now joins only the buckets whose path starts with that literal; declaration order inside a bucket is unchanged and `Mount`, `Host` and custom routes stay candidates everywhere.

@@ -605,6 +605,12 @@ class _DefaultLifespan:
         return self
 
 
+class RoutesGeneration:
+    """Counts every RouteList mutation in the process; route caches check it with one comparison."""
+
+    value = 0
+
+
 class RouteList(list[BaseRoute]):
     """Route list that counts its own mutations so a router can cache indexes built from it."""
 
@@ -612,50 +618,54 @@ class RouteList(list[BaseRoute]):
         super().__init__(routes)
         self.version = 0
 
+    def changed(self) -> None:
+        self.version += 1
+        RoutesGeneration.value += 1
+
     def append(self, route: BaseRoute) -> None:
         super().append(route)
-        self.version += 1
+        self.changed()
 
     def extend(self, routes: Iterable[BaseRoute]) -> None:
         super().extend(routes)
-        self.version += 1
+        self.changed()
 
     def insert(self, index: SupportsIndex, route: BaseRoute) -> None:
         super().insert(index, route)
-        self.version += 1
+        self.changed()
 
     def remove(self, route: BaseRoute) -> None:
         super().remove(route)
-        self.version += 1
+        self.changed()
 
     def pop(self, index: SupportsIndex = -1) -> BaseRoute:
         route = super().pop(index)
-        self.version += 1
+        self.changed()
         return route
 
     def clear(self) -> None:
         super().clear()
-        self.version += 1
+        self.changed()
 
     def sort(self, *args: Any, **kwargs: Any) -> None:
         super().sort(*args, **kwargs)
-        self.version += 1
+        self.changed()
 
     def reverse(self) -> None:
         super().reverse()
-        self.version += 1
+        self.changed()
 
     def __setitem__(self, index: Any, route: Any) -> None:
         super().__setitem__(index, route)
-        self.version += 1
+        self.changed()
 
     def __delitem__(self, index: SupportsIndex | slice) -> None:
         super().__delitem__(index)
-        self.version += 1
+        self.changed()
 
     def __iadd__(self, routes: Iterable[BaseRoute]) -> RouteList:  # type: ignore[override,misc]
         super().__iadd__(routes)
-        self.version += 1
+        self.changed()
         return self
 
 

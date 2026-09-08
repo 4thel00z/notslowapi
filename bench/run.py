@@ -127,6 +127,7 @@ LADDER: list[Rung] = [
         body='{"name": "widget", "price": 1.5, "tags": ["a", "b"]}',
         server="granian",
     ),
+    Rung("l2c_fastapi_included", f"{BASE}/", server="granian"),
     Rung("l5b_fastapi_50routes_included", f"{BASE}/r39", server="granian"),
     Rung("l0_raw", f"{BASE}/", server="granian", workers=6),
     Rung("l2_fastapi_dict", f"{BASE}/", server="granian", workers=4),
