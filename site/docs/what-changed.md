@@ -32,6 +32,12 @@ A route with three `Depends` (one nested; a path param, a header and pagination 
 - l6_fastapi_depends: 25.9 → 25.0; on granian 16.4 → 15.0
 - l6_fastapi_depends on granian: 15.6 → 14.7 (five pairs); on uvicorn 25.0 → 24.8, within noise
 
+## Dependency trees solved from a compiled plan
+
+Even with every fact cached, the solver loop was still generic: for each dependant on each request it looked up its leaf and simple flags, its parameter plan, cache key and call kinds, cast the callable, checked a per-request cache dict twice and inserted into it once, and a nested simple dependency cost a `solve_simple` coroutine frame of its own; the result came back wrapped in a `SolvedDependency`. `compile_solve_plan` now flattens a simple tree (path, query, header and cookie params only, no dependency with `yield`) into a tuple of steps when the route is built, children before parents, with each step holding its parameter specs, its call and kind, the keywords it fills from earlier steps, and a shared slot when the same dependency occurs more than once. `run_solve_plan` walks that tuple: same declaration order, a dependant is called only when its subtree and its own params had no errors, a repeated dependency is read at every occurrence but called once when `use_cache` holds, `use_cache=False` calls again, a sync dependency still runs in the threadpool, and errors come out in the same order (a parametrized test compares values, errors and the call log against `solve_dependencies` over nine trees and requests). `planned_route_app` calls the plan and hands the endpoint's value straight to the serializer; overrides still send the request through the general app, and any tree with a `Request`, `Response`, `BackgroundTasks` or security-scopes parameter, a body, or a `yield` keeps the generic solver.
+
+- l6_fastapi_depends: 23.2 → 21.4 (43.1k → 46.7k req/s); on granian 13.5 → 12.3 (74.1k → 81.3k req/s), five pairs, control l3_fastapi_params on granian 10.3 → 10.4
+
 ## Exit stacks and middleware only where needed
 
 Two `AsyncExitStack`s were opened per request though only dependencies with `yield` and SSE use them; routes now decide at build time, `AsyncExitStackMiddleware` is no longer installed, and routes that never need a stack get a one-frame app.

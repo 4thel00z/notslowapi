@@ -25,15 +25,42 @@ PAYLOAD_BYTES: bytes = json.dumps(PAYLOAD).encode()
 OUT_DIR = Path(__file__).parent / "out"
 
 
+async def raw_lifespan(receive: Receive, send: Send) -> None:
+    while True:
+        message = await receive()
+        if message["type"] == "lifespan.startup":
+            await send({"type": "lifespan.startup.complete"})
+            continue
+        await send({"type": "lifespan.shutdown.complete"})
+        return
+
+
 async def l0_raw(scope: Scope, receive: Receive, send: Send) -> None:
     if scope["type"] == "lifespan":
-        while True:
-            message = await receive()
-            if message["type"] == "lifespan.startup":
-                await send({"type": "lifespan.startup.complete"})
-                continue
-            await send({"type": "lifespan.shutdown.complete"})
-            return
+        await raw_lifespan(receive, send)
+        return
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", str(len(PAYLOAD_BYTES)).encode()),
+            ],
+        }
+    )
+    await send({"type": "http.response.body", "body": PAYLOAD_BYTES})
+
+
+async def l0b_raw_body(scope: Scope, receive: Receive, send: Send) -> None:
+    """The server floor for a POST: read the whole body from receive, answer the fixed payload."""
+    if scope["type"] == "lifespan":
+        await raw_lifespan(receive, send)
+        return
+    while True:
+        message = await receive()
+        if not message.get("more_body", False):
+            break
     await send(
         {
             "type": "http.response.start",
@@ -216,6 +243,7 @@ def with_pyinstrument(app: ASGIApp, name: str) -> ASGIApp:
 
 RUNGS: dict[str, ASGIApp] = {
     "l0_raw": l0_raw,
+    "l0b_raw_body": l0b_raw_body,
     "l1_starlette": l1_starlette,
     "l1b_starlette_params": l1b_starlette_params,
     "l2_fastapi_dict": l2_fastapi_dict,
