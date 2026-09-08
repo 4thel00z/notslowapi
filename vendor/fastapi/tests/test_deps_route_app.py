@@ -50,7 +50,7 @@ def route_for(path: str) -> APIRoute:
 
 
 def test_dependency_routes_without_yield_get_the_one_frame_app() -> None:
-    assert route_for("/who").app.__qualname__ == "plain_route_app.<locals>.app"
+    assert route_for("/who").app.__qualname__ == "planned_route_app.<locals>.app"
     assert route_for("/stamped").app.__qualname__ == "plain_route_app.<locals>.app"
     assert route_for("/resource").app.__qualname__ == "request_response.<locals>.app"
 

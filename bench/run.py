@@ -77,6 +77,12 @@ UVICORN_TUNED = ("--no-proxy-headers", "--no-server-header", "--no-date-header")
 
 LADDER: list[Rung] = [
     Rung("l0_raw", f"{BASE}/"),
+    Rung(
+        "l0b_raw_body",
+        f"{BASE}/",
+        method="POST",
+        body='{"name": "widget", "price": 1.5, "tags": ["a", "b"]}',
+    ),
     Rung("l1_starlette", f"{BASE}/"),
     Rung("l1b_starlette_params", f"{BASE}/items/42?q=hello"),
     Rung("l2_fastapi_dict", f"{BASE}/"),
@@ -98,6 +104,13 @@ LADDER: list[Rung] = [
     Rung("l0_raw", f"{BASE}/", server_args=UVICORN_TUNED, tag="tuned"),
     Rung("l2_fastapi_dict", f"{BASE}/", server_args=UVICORN_TUNED, tag="tuned"),
     Rung("l0_raw", f"{BASE}/", server="granian"),
+    Rung(
+        "l0b_raw_body",
+        f"{BASE}/",
+        method="POST",
+        body='{"name": "widget", "price": 1.5, "tags": ["a", "b"]}',
+        server="granian",
+    ),
     Rung("l1_starlette", f"{BASE}/", server="granian"),
     Rung("l2_fastapi_dict", f"{BASE}/", server="granian"),
     Rung("l3_fastapi_params", f"{BASE}/items/42?q=hello", server="granian"),

@@ -57,16 +57,19 @@ from notslowapi.dependencies.models import (
 )
 from notslowapi.dependencies.utils import (
     SolvedDependency,
+    SolvePlan,
     _get_body_field,
     _get_flat_body_params,
     _should_embed_body_fields,
     compile_param_specs,
+    compile_solve_plan,
     dependant_has_generator_dependencies,
     extract_params,
     get_dependant,
     get_parameterless_sub_dependant,
     get_stream_item_type,
     get_typed_return_annotation,
+    run_solve_plan,
     solve_dependencies,
 )
 from notslowapi.encoders import jsonable_encoder
@@ -369,6 +372,7 @@ class PlainHandlerParts:
     body_allowed: bool
     with_content_length: bool
     endpoint_context: Callable[[Scope], EndpointContext]
+    plan: SolvePlan | None = None
 
 
 def plain_route_app(
@@ -422,6 +426,90 @@ def plain_route_app(
                 or solved.response is not None
                 or solved.background_tasks is not None
             ):
+                await respond(raw_response, scope, solved)(scope, receive, sender)
+                return
+            body = serialize(raw_response, scope)
+            if not body_allowed:
+                body = b""
+            if with_content_length:
+                headers = [
+                    (b"content-length", b"%d" % len(body)),
+                    JSON_CONTENT_TYPE_HEADER,
+                ]
+            else:
+                headers = [JSON_CONTENT_TYPE_HEADER]
+            tracker[0] = True
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": status_code,
+                    "headers": headers,
+                }
+            )
+            await send({"type": "http.response.body", "body": body})
+        except Exception as exc:
+            await send_route_exception_response(
+                exc, request, scope, receive, sender, tracker
+            )
+
+    return app
+
+
+def planned_route_app(
+    parts: PlainHandlerParts,
+    needs_exit_stacks: Callable[[], bool] | None = None,
+    fallback: ASGIApp | None = None,
+) -> ASGIApp:
+    """plain_route_app for a simple dependency tree: the solver is the route's compiled SolvePlan.
+
+    No Response or BackgroundTasks parameter can take part in a simple tree, so the
+    endpoint's value goes straight to serialize. The per-request needs_exit_stacks check
+    and the fallback are the same as plain_route_app's.
+    """
+    plan = parts.plan
+    if plan is None:
+        raise ValueError("planned_route_app needs parts with a plan")
+    plan_needs_cookies = plan.needs_cookies
+    call = parts.call
+    respond = parts.respond
+    serialize = parts.serialize
+    status_code = parts.status_code
+    body_allowed = parts.body_allowed
+    with_content_length = parts.with_content_length
+    endpoint_context = parts.endpoint_context
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        if needs_exit_stacks is not None and needs_exit_stacks():
+            await fallback(scope, receive, send)  # type: ignore[misc]
+            return
+        request = Request(scope, receive, send)
+        tracker: list[bool] | None = scope.get(RESPONSE_STARTED_KEY)
+        if tracker is None:
+            tracker = [False]
+            scope[RESPONSE_STARTED_KEY] = tracker
+            sender = tracking_sender(send, tracker)
+        else:
+            sender = send
+        try:
+            values, errors = await run_solve_plan(
+                plan, scope, request.cookies if plan_needs_cookies else None
+            )
+            if errors:
+                raise RequestValidationError(
+                    errors, body=None, endpoint_ctx=endpoint_context(scope)
+                )
+            raw_response = await call(**values)
+            if isinstance(raw_response, Response):
+                await raw_response(scope, receive, sender)
+                return
+            if serialize is None:
+                solved = SolvedDependency(
+                    values=values,
+                    errors=errors,
+                    background_tasks=None,
+                    response=None,
+                    dependency_cache={},
+                )
                 await respond(raw_response, scope, solved)(scope, receive, sender)
                 return
             body = serialize(raw_response, scope)
@@ -664,11 +752,15 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
     parts = getattr(handler, "parts", None)
     if route.dependant.dependencies:
         general = request_response(handler, needs_exit_stacks=route.needs_exit_stacks)
-        if isinstance(parts, PlainHandlerParts):
-            return plain_route_app(
+        if not isinstance(parts, PlainHandlerParts):
+            return general
+        if parts.plan is not None:
+            return planned_route_app(
                 parts, needs_exit_stacks=route.needs_exit_stacks, fallback=general
             )
-        return general
+        return plain_route_app(
+            parts, needs_exit_stacks=route.needs_exit_stacks, fallback=general
+        )
     if isinstance(parts, TrivialHandlerParts):
         return trivial_route_app(parts)
     if isinstance(parts, BodyHandlerParts):
@@ -676,6 +768,8 @@ def route_app(route: "_APIRouteLike", handler: Callable[[Request], Any]) -> ASGI
     if isinstance(parts, ParamsHandlerParts):
         return params_route_app(parts)
     if isinstance(parts, PlainHandlerParts):
+        if parts.plan is not None:
+            return planned_route_app(parts)
         return plain_route_app(parts)
     return trivial_request_response(handler)
 
@@ -1285,6 +1379,7 @@ def get_request_handler(
                     trivial_status < 200 or trivial_status in (204, 304)
                 ),
                 endpoint_context=endpoint_context_for_scope,
+                plan=compile_solve_plan(dependant),
             )
 
     if not body_field and not is_sse_stream and not is_json_stream and not is_generator:

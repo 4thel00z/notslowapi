@@ -1131,6 +1131,152 @@ def extract_params(
     return values, errors
 
 
+NOT_SOLVED = object()
+FAILED = object()
+
+SolveStep = tuple[
+    tuple[ParamEntry, ...],
+    bool,
+    Any,
+    bool,
+    tuple[tuple[str | None, int], ...],
+    int,
+    bool,
+]
+
+
+@dataclass(frozen=True, slots=True)
+class SolvePlan:
+    """A route's dependency tree flattened for run_solve_plan.
+
+    steps holds every dependant below the endpoint, children before parents, each as
+    (specs, needs_cookies, call, is_coroutine, subs, slot, use_cache): subs pairs the
+    parent's keyword (None for a path-level dependency) with the step it comes from, and
+    slot indexes the result shared by the occurrences of one cache key (-1 when the key
+    occurs once). The endpoint's own specs and subs are kept apart; the route calls it.
+    """
+
+    steps: tuple[SolveStep, ...]
+    root_specs: tuple[ParamEntry, ...]
+    root_needs_cookies: bool
+    root_subs: tuple[tuple[str | None, int], ...]
+    slot_count: int
+    needs_cookies: bool
+
+
+def tree_has_generator(dependant: Dependant) -> bool:
+    return any(
+        dependant_call_kinds(sub)[0] or tree_has_generator(sub)
+        for sub in dependant.dependencies
+    )
+
+
+def count_cache_keys(
+    dependant: Dependant, counts: dict[DependencyCacheKey, int]
+) -> None:
+    for sub in dependant.dependencies:
+        key = dependant_cache_key(sub)
+        counts[key] = counts.get(key, 0) + 1
+        count_cache_keys(sub, counts)
+
+
+def compile_solve_plan(dependant: Dependant) -> SolvePlan | None:
+    """The SolvePlan for a simple tree (dependant_is_simple, no dependency with yield), else None.
+
+    Same order as solve_dependencies without overrides: sub-dependants in declaration
+    order, each solved and called before its parent's own params are read; a dependant
+    whose subtree or params had errors is not called; a dependant used more than once has
+    its params read at every occurrence, is called once when use_cache holds, and its
+    first result fills the shared slot either way.
+    """
+    if not dependant_is_simple(dependant) or tree_has_generator(dependant):
+        return None
+    counts: dict[DependencyCacheKey, int] = {}
+    count_cache_keys(dependant, counts)
+    steps: list[SolveStep] = []
+    slots: dict[DependencyCacheKey, int] = {}
+
+    def add(sub: Dependant) -> int:
+        subs = tuple((child.name, add(child)) for child in sub.dependencies)
+        plan = dependant_param_plan(sub)
+        key = dependant_cache_key(sub)
+        slot = slots.setdefault(key, len(slots)) if counts[key] > 1 else -1
+        steps.append(
+            (
+                plan.specs,
+                plan.needs_cookies,
+                sub.call,
+                dependant_call_kinds(sub)[1],
+                subs,
+                slot,
+                sub.use_cache,
+            )
+        )
+        return len(steps) - 1
+
+    root_subs = tuple((sub.name, add(sub)) for sub in dependant.dependencies)
+    root_plan = dependant_param_plan(dependant)
+    return SolvePlan(
+        tuple(steps),
+        root_plan.specs,
+        root_plan.needs_cookies,
+        root_subs,
+        len(slots),
+        root_plan.needs_cookies or any(step[1] for step in steps),
+    )
+
+
+async def run_solve_plan(
+    plan: SolvePlan, scope: Mapping[str, Any], cookies: Mapping[str, str] | None
+) -> tuple[dict[str, Any], list[Any]]:
+    """solve_dependencies for a compiled plan: the endpoint's keyword values and the errors."""
+    errors: list[Any] = []
+    results: list[Any] = []
+    slots = [NOT_SOLVED] * plan.slot_count if plan.slot_count else None
+    for specs, needs_cookies, call, is_coroutine, subs, slot, use_cache in plan.steps:
+        values: dict[str, Any] = {}
+        failed = False
+        if specs:
+            values, spec_errors = extract_params(
+                specs, scope, cookies if needs_cookies else None
+            )
+            if spec_errors:
+                errors.extend(spec_errors)
+                failed = True
+        for name, index in subs:
+            result = results[index]
+            if result is FAILED:
+                failed = True
+                continue
+            if name is not None:
+                values[name] = result
+        if failed:
+            results.append(FAILED)
+            continue
+        if slot >= 0 and use_cache and slots[slot] is not NOT_SOLVED:  # type: ignore[index]
+            results.append(slots[slot])  # type: ignore[index]
+            continue
+        if is_coroutine:
+            solved = await call(**values)
+        else:
+            solved = await run_in_threadpool(call, **values)
+        results.append(solved)
+        if slot >= 0 and slots[slot] is NOT_SOLVED:  # type: ignore[index]
+            slots[slot] = solved  # type: ignore[index]
+    values = {}
+    if plan.root_specs:
+        values, spec_errors = extract_params(
+            plan.root_specs, scope, cookies if plan.root_needs_cookies else None
+        )
+        errors.extend(spec_errors)
+    for name, index in plan.root_subs:
+        result = results[index]
+        if result is FAILED or name is None:
+            continue
+        values[name] = result
+    return values, errors
+
+
 def request_params_to_args(
     fields: Sequence[ModelField],
     received_params: Mapping[str, Any] | QueryParams | Headers,
