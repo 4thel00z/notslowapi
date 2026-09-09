@@ -158,7 +158,7 @@ LADDER: list[Rung] = [
 ]
 
 
-def wait_for_port(timeout_s: float = 15.0) -> None:
+def wait_for_port(timeout_s: float = 45.0) -> None:
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
         try:
@@ -177,7 +177,11 @@ def start_server(rung: Rung, profile: str | None) -> subprocess.Popen[bytes]:
         env["BENCH_PROFILE"] = profile
     cmd = server_command(rung)
     proc = subprocess.Popen(cmd, env=env)
-    wait_for_port()
+    try:
+        wait_for_port()
+    except RuntimeError:
+        stop_server(proc)
+        raise
     return proc
 
 
