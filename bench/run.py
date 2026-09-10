@@ -1,5 +1,6 @@
 """Drive uvicorn + oha across the ladder and report rps, latency and per-layer delta."""
 
+import importlib
 import json
 import os
 import signal
@@ -169,7 +170,21 @@ def wait_for_port(timeout_s: float = 45.0) -> None:
     raise RuntimeError(f"server on {HOST}:{PORT} did not come up in {timeout_s}s")
 
 
+def assess_server_extension(rung: Rung) -> None:
+    """Load the server's native extension once in this process.
+
+    macOS assesses a freshly written ad-hoc-signed binary the first time any process
+    loads it (about 2.5 s when the machine is idle, much longer when syspolicyd is
+    busy). Doing it here keeps that wait out of the server's start budget after a
+    wheel was reinstalled.
+    """
+    if rung.server != "granian":
+        return
+    importlib.import_module("granian._granian")
+
+
 def start_server(rung: Rung, profile: str | None) -> subprocess.Popen[bytes]:
+    assess_server_extension(rung)
     env = dict(os.environ, BENCH_RUNG=rung.name, BENCH_LABEL=rung.label)
     if rung.gc_freeze:
         env["BENCH_GC_FREEZE"] = "1"
