@@ -62,3 +62,7 @@ uv run python bench/compare.py bench/baseline/results_fix1_before.json bench/bas
 ## Ladder v5
 
 `results_ladder_v5.json` (2026-09-03 evening, AC power, master with all 41 changes) is assembled from three runs taken 15 minutes apart while the machine was in use: a full run, then two re-runs of the rungs a load burst had hit, accepted only when both raw ASGI floors matched the full run within 5 percent (13.5 to 13.9 µs on uvicorn, 7.9 on granian). Which run a rung comes from is recorded in the session notes; every row is a median of three 4 s oha runs at 64 connections.
+
+## Ladder v6
+
+`results_ladder_v6.json` (2026-09-11 morning, AC power, master with all 43 changes) is one full run with `BENCH_MAX_LOAD=6`: before each rung the runner waited until the 1-minute load average was below 6, so no rung ran during a load burst. Every row is a median of three 5 s oha runs at 64 connections. Against v5 the uvicorn floor moved from 13.9 to 13.2 µs, so rows should be compared to their floor: the three-dependency route went from 9.5 to 8.9 µs above the uvicorn floor and from 5.2 to 3.2 µs above the granian floor (the compiled solver plan), and 50 routes via include_router from 3.0 to 2.0 µs above the uvicorn floor (direct dispatch of included routes).
