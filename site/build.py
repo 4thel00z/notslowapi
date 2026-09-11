@@ -37,11 +37,14 @@ def load_rows(name: str) -> list[dict]:
 
 def split_server(rung: str) -> tuple[str, str]:
     base, _, tag = rung.partition("[")
-    if "granian" in tag:
+    tag = tag.rstrip("]")
+    if not tag:
+        return base, "uvicorn"
+    if tag == "granian":
         return base, "granian"
-    if "asyncio" in tag:
+    if tag == "asyncio+h11":
         return base, "uvicorn asyncio+h11"
-    return base, "uvicorn"
+    return base, tag
 
 
 LADDER_COLUMNS = ("FastAPI 0.141 day one, uvicorn", "notslowapi, uvicorn", "notslowapi, granian")
