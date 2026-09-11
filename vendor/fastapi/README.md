@@ -4,7 +4,7 @@
 
 <p align="center"><strong>FastAPI, minus the slow.</strong></p>
 
-<p align="center">A fork of FastAPI 0.141.1 that does less work per request: the same public API and test suite, with the plain JSON route down from 31.2 to 15.9 µs on uvicorn and 8.5 µs on granian.</p>
+<p align="center">A fork of FastAPI 0.141.1 that does less work per request: the same public API and test suite, with the plain JSON route down from 31.2 to 15.7 µs on uvicorn and 8.1 µs on granian.</p>
 
 <p align="center">
   <a href="https://pypi.org/project/notslowapi"><img src="https://img.shields.io/pypi/v/notslowapi" alt="PyPI version"></a>
@@ -44,9 +44,9 @@ Replace the package name `fastapi` with `notslowapi` in every import.
 granian --interface asgi --workers 1 --loop uvloop myapp:app
 ```
 
-`myapp:app` is the module path and attribute of your `FastAPI` instance. granian's I/O runs on Rust threads alongside the Python thread, so the framework's Python is the only thing left on the critical path. On a bare ASGI callable the server alone costs 7.8 µs per request under granian against 13.5 µs under uvicorn, and the notslowapi route adds 0.5 µs on top of that under granian against 2.0 µs under uvicorn.
+`myapp:app` is the module path and attribute of your `FastAPI` instance. granian's I/O runs on Rust threads alongside the Python thread, so the framework's Python is the only thing left on the critical path. On a bare ASGI callable the server alone costs 7.9 µs per request under granian against 13.2 µs under uvicorn, and the notslowapi route adds 0.2 µs on top of that under granian against 2.5 µs under uvicorn.
 
-On uvicorn, install `uvicorn[standard]` for uvloop and httptools (15.9 µs on the plain route against 64.0 µs on asyncio and h11) and run:
+On uvicorn, install `uvicorn[standard]` for uvloop and httptools (15.7 µs on the plain route against 53.2 µs on asyncio and h11) and run:
 
 ```console
 uvicorn myapp:app --loop uvloop --http httptools --no-proxy-headers --no-server-header --no-date-header
@@ -56,16 +56,16 @@ Leave `--proxy-headers` on if a proxy in front of you sets `X-Forwarded-*` heade
 
 ## Numbers
 
-One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5 s oha runs, one worker. The first column is upstream FastAPI 0.141.1 on uvicorn at the start of the work; the other two are the current master (all 37 changes). Raw files: `bench/baseline/results_ladder_v1.json` and `results_ladder_v5.json` in the repository.
+One core (Apple M3 Pro, Python 3.13), 64 keep-alive connections, median of 3 x 5 s oha runs, one worker. The first column is upstream FastAPI 0.141.1 on uvicorn at the start of the work; the other two are the current master (all 43 changes). Raw files: `bench/baseline/results_ladder_v1.json` and `results_ladder_v6.json` in the repository.
 
 | route | day one, uvicorn (FastAPI 0.141.1) | notslowapi, uvicorn | notslowapi, granian |
 |---|---|---|---|
-| raw ASGI app, fixed bytes (server floor) | 13.7 µs, 73,040 req/s | 13.9 µs, 72,145 req/s | 7.9 µs, 126,018 req/s |
-| plain JSON route | 31.2 µs, 32,033 req/s | 15.9 µs, 63,047 req/s | 8.5 µs, 117,969 req/s |
-| int path + str query param | 57.0 µs, 17,531 req/s | 18.3 µs, 54,786 req/s | 9.3 µs, 107,398 req/s |
-| pydantic body + response_model | 52.1 µs, 19,212 req/s | 19.2 µs, 52,026 req/s | 13.0 µs, 76,997 req/s |
-| 50 routes via include_router | 92.2 µs, 10,842 req/s * | 16.9 µs, 59,154 req/s | 8.5 µs, 117,247 req/s |
-| three dependencies (path, header, query via Depends) | not measured | 23.4 µs, 42,684 req/s | 13.1 µs, 76,116 req/s |
+| raw ASGI app, fixed bytes (server floor) | 13.7 µs, 73,040 req/s | 13.2 µs, 75,943 req/s | 7.9 µs, 126,946 req/s |
+| plain JSON route | 31.2 µs, 32,033 req/s | 15.7 µs, 63,757 req/s | 8.1 µs, 123,416 req/s |
+| int path + str query param | 57.0 µs, 17,531 req/s | 17.0 µs, 58,977 req/s | 8.8 µs, 113,996 req/s |
+| pydantic body + response_model | 52.1 µs, 19,212 req/s | 18.0 µs, 55,692 req/s | 12.4 µs, 80,445 req/s |
+| 50 routes via include_router | 92.2 µs, 10,842 req/s * | 15.2 µs, 65,887 req/s | 8.3 µs, 120,211 req/s |
+| three dependencies (path, header, query via Depends) | not measured | 22.1 µs, 45,296 req/s | 11.1 µs, 90,259 req/s |
 
 \* This rung did not exist in `results_ladder_v1.json`. The 92.2 µs is the before-run of the include_router change (`bench/baseline/results_fix11_before.json`), measured on a tree that already had the first ten changes, so it understates the day-one gap.
 

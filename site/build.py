@@ -122,7 +122,7 @@ def fixes_table() -> str:
 
 def render_benchmarks(template: str) -> str:
     day_one = load_rows("results_ladder_v1.json")
-    current = load_rows("results_ladder_v3.json")
+    current = load_rows("results_ladder_v6.json")
     return template.replace("{{LADDER_TABLE}}", ladder_table(day_one, current)).replace(
         "{{FIXES_TABLE}}", fixes_table()
     )
