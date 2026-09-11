@@ -326,8 +326,22 @@ def sample_native(pid: int, name: str, seconds: int) -> subprocess.Popen[bytes]:
     )
 
 
+def wait_for_idle(rung: Rung) -> None:
+    max_load = os.environ.get("BENCH_MAX_LOAD")
+    if not max_load:
+        return
+    limit = float(max_load)
+    load = os.getloadavg()[0]
+    if load < limit:
+        return
+    print(f"{rung.label}: load {load:.1f}, waiting for < {limit:g}", flush=True)
+    while os.getloadavg()[0] >= limit:
+        time.sleep(15)
+
+
 def measure(rung: Rung, repeats: int, duration: str, concurrency: int, native: bool) -> Result:
     result = Result(rung)
+    wait_for_idle(rung)
     proc = start_server(rung, profile=None)
     try:
         oha(rung, "2s", concurrency)
@@ -346,6 +360,7 @@ def measure(rung: Rung, repeats: int, duration: str, concurrency: int, native: b
 
 
 def profile(rung: Rung, duration: str, concurrency: int) -> None:
+    wait_for_idle(rung)
     proc = start_server(rung, profile="pyinstrument")
     try:
         oha(rung, duration, concurrency)
